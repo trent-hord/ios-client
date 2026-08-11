@@ -654,21 +654,32 @@ public class NetworkExtensionAdapter: ObservableObject {
     }
 
     /// Updates the VPN On Demand configuration on the current manager.
-    /// When enabled, iOS will automatically reconnect the VPN after network changes or reboot.
+    /// When enabled, the system automatically reconnects the VPN after network changes or reboot.
     /// Should only be enabled when the user is logged in to avoid reconnect loops.
     func setOnDemandEnabled(_ enabled: Bool) {
+        // Ensure a VPN manager is loaded (user may toggle On Demand from Settings
+        // after app launch without having started a tunnel yet in this session).
+        if self.vpnManager == nil {
+            logger.info("setOnDemandEnabled: VPN manager not loaded, loading preferences first")
+            Task { @MainActor in
+                _ = await self.loadCurrentConnectionState()
+                self.applyOnDemandEnabled(enabled)
+            }
+            return
+        }
+        applyOnDemandEnabled(enabled)
+    }
+
+    /// Applies the On Demand enabled flag and rules to the current VPN manager.
+    private func applyOnDemandEnabled(_ enabled: Bool) {
         guard let manager = self.vpnManager else {
             logger.warning("setOnDemandEnabled: No VPN manager available")
             return
         }
 
-        if enabled {
-            let defaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
-            let loginRequired = defaults?.bool(forKey: GlobalConstants.keyLoginRequired) ?? true
-            if loginRequired {
-                logger.warning("setOnDemandEnabled: Refusing to enable On Demand — user is not logged in")
-                return
-            }
+        if enabled && !canEnableOnDemand() {
+            logger.warning("setOnDemandEnabled: Refusing to enable On Demand — user is not logged in")
+            return
         }
 
         if enabled {
@@ -686,6 +697,10 @@ public class NetworkExtensionAdapter: ObservableObject {
             manager.onDemandRules = []
         }
         manager.isOnDemandEnabled = enabled
+        // On Demand only works when the VPN configuration itself is enabled.
+        if enabled {
+            manager.isEnabled = true
+        }
 
         manager.saveToPreferences { error in
             if let error = error {
@@ -694,6 +709,21 @@ public class NetworkExtensionAdapter: ObservableObject {
                 self.logger.info("setOnDemandEnabled: On Demand \(enabled ? "enabled" : "disabled") successfully")
             }
         }
+    }
+
+    /// Whether it is safe to enable On Demand (user has a valid login session).
+    /// iOS uses the shared `keyLoginRequired` flag; tvOS cannot rely on that
+    /// app-group flag for extension IPC and instead checks local config presence.
+    private func canEnableOnDemand() -> Bool {
+        #if os(tvOS)
+        // keyLoginRequired is not maintained on tvOS (shared defaults don't work
+        // between app and extension). Gate on whether a login config exists.
+        return Preferences.hasConfigInUserDefaults()
+        #else
+        let defaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+        let loginRequired = defaults?.bool(forKey: GlobalConstants.keyLoginRequired) ?? true
+        return !loginRequired
+        #endif
     }
 
     /// Applies granular On Demand rules based on Wi-Fi/Cellular policies and network lists.
@@ -735,6 +765,23 @@ public class NetworkExtensionAdapter: ObservableObject {
 
     /// Converts policy enums into NEOnDemandRule objects.
     private func buildOnDemandRulesFrom(wifiPolicy: WiFiOnDemandPolicy, cellularPolicy: CellularOnDemandPolicy, wifiNetworks: [String]) -> [NEOnDemandRule] {
+        #if os(tvOS)
+        // Apple TV has no cellular and commonly uses Ethernet. For the default
+        // "always connect" policy (the only policy exposed in the tvOS UI), match
+        // any interface so the tunnel reconnects after reboot on Wi-Fi or Ethernet.
+        // SSID-based policies still use Wi-Fi-only rules if ever set programmatically.
+        if wifiPolicy == .always {
+            let rule = NEOnDemandRuleConnect()
+            rule.interfaceTypeMatch = .any
+            return [rule]
+        }
+        if wifiPolicy == .never {
+            let rule = NEOnDemandRuleDisconnect()
+            rule.interfaceTypeMatch = .any
+            return [rule]
+        }
+        #endif
+
         var rules: [NEOnDemandRule] = []
 
         // Wi-Fi rules

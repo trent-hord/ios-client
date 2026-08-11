@@ -33,6 +33,18 @@ struct TVSettingsView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         TVSettingsSection(title: "Connection") {
+                            TVSettingsToggleRow(
+                                icon: "arrow.trianglehead.2.clockwise",
+                                title: "VPN On Demand",
+                                subtitle: "On by default. Auto-connects after reboot and network changes. Turn off to allow a lasting manual disconnect.",
+                                isOn: Binding(
+                                    get: { viewModel.connectOnDemand },
+                                    set: { newValue in
+                                        viewModel.setConnectOnDemand(isEnabled: newValue)
+                                    }
+                                )
+                            )
+
                             TVSettingsRow(
                                 icon: "server.rack",
                                 title: "Change Server",

@@ -173,6 +173,12 @@ struct NetBirdApp: App {
                 viewModel.disconnectPressed = false
                 viewModel.extensionState = initialStatus
                 viewModel.updateVPNDisplayState()
+
+                // Ensure On Demand system rules match the (tvOS default-on) preference
+                // even when the connection was already up before this app launch.
+                if initialStatus == .connected {
+                    viewModel.ensureOnDemandConfigured()
+                }
             } else {
                 // No matching VPN profile found — still force a widget timeline refresh so
                 // the widget doesn't stay stuck on a transitioning state from a prior

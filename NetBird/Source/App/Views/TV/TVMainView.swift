@@ -95,6 +95,10 @@ struct TVMainView: View {
                                 #endif
                                 // Start VPN only after config transfer completes
                                 viewModel.networkExtensionAdapter.startVPNConnection()
+                                // Config is now available — apply default On Demand so
+                                // the tunnel survives reboot even if this connect attempt
+                                // is interrupted before we observe .connected.
+                                viewModel.ensureOnDemandConfigured()
                             }
                         } else {
                             #if DEBUG
@@ -238,6 +242,11 @@ struct TVConnectionView: View {
                 )
                 .padding(.horizontal, 120)
                 .padding(.bottom, 50)
+            }
+
+            // On Demand disconnect confirmation (mirrors iOS alert)
+            if viewModel.showOnDemandDisconnectAlert {
+                TVOnDemandDisconnectAlert(viewModel: viewModel)
             }
         }
     }
@@ -541,6 +550,83 @@ struct TVCompactStatCard: View {
                         .foregroundColor(TVColors.textPrimary)
                 }
             }
+        }
+    }
+}
+
+/// Shown when the user tries to disconnect while VPN On Demand is enabled.
+/// Mirrors the iOS alert: disconnecting alone would just reconnect the tunnel.
+struct TVOnDemandDisconnectAlert: View {
+    @ObservedObject var viewModel: ViewModel
+
+    private enum FocusedButton {
+        case cancel, disableAndDisconnect
+    }
+
+    @FocusState private var focusedButton: FocusedButton?
+    @State private var lastFocusedButton: FocusedButton = .cancel
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+
+            VStack(spacing: 40) {
+                Image(systemName: "arrow.trianglehead.2.clockwise")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+
+                Text("VPN On Demand Active")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundColor(TVColors.textAlert)
+
+                Text("VPN On Demand is enabled and will automatically reconnect the VPN. Do you want to disable On Demand and disconnect?")
+                    .font(.system(size: 24))
+                    .foregroundColor(TVColors.textAlert)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 600)
+
+                HStack(spacing: 40) {
+                    TVAlertButton(
+                        title: "Cancel",
+                        style: .outlined,
+                        isFocused: focusedButton == .cancel,
+                        action: { viewModel.showOnDemandDisconnectAlert = false }
+                    )
+                    .focused($focusedButton, equals: .cancel)
+
+                    TVAlertButton(
+                        title: "Disable & Disconnect",
+                        style: .filled(Color.red),
+                        isFocused: focusedButton == .disableAndDisconnect,
+                        action: {
+                            viewModel.showOnDemandDisconnectAlert = false
+                            viewModel.closeWithOnDemandDisabled()
+                        }
+                    )
+                    .focused($focusedButton, equals: .disableAndDisconnect)
+                }
+                .focusSection()
+            }
+            .padding(60)
+            .background(
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(TVColors.bgSideDrawer)
+            )
+        }
+        .onAppear {
+            focusedButton = .cancel
+        }
+        .onChange(of: focusedButton) { oldValue, newValue in
+            _ = oldValue
+            if let newValue = newValue {
+                lastFocusedButton = newValue
+            } else {
+                focusedButton = lastFocusedButton
+            }
+        }
+        .onExitCommand {
+            viewModel.showOnDemandDisconnectAlert = false
         }
     }
 }

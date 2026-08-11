@@ -412,9 +412,16 @@ class ViewModel: ObservableObject {
     #endif
     
     func close() -> Void {
+        // Warn user that On Demand will reconnect if rules match.
+        // On iOS this evaluates per-interface Wi-Fi/cellular policies; on tvOS
+        // On Demand is a simple always-connect toggle so any enabled state reconnects.
         #if os(iOS)
-        // Warn user that On Demand will reconnect if rules match
         if connectOnDemand && onDemandRulesAllowConnect() {
+            showOnDemandDisconnectAlert = true
+            return
+        }
+        #elseif os(tvOS)
+        if connectOnDemand {
             showOnDemandDisconnectAlert = true
             return
         }
@@ -639,10 +646,22 @@ class ViewModel: ObservableObject {
 
         if status == .connected {
             routeViewModel.getRoutes()
-            if connectOnDemand {
-                networkExtensionAdapter.setOnDemandEnabled(true)
-            }
+            ensureOnDemandConfigured()
         }
+    }
+
+    /// Pushes the persisted On Demand preference into the system VPN configuration.
+    /// On tvOS this is on by default (Tailscale-style); call after connect and on
+    /// app activation so upgrades pick up the default without a manual re-toggle.
+    func ensureOnDemandConfigured() {
+        guard connectOnDemand else { return }
+        #if os(tvOS)
+        // Force always-connect rules on any interface (Wi-Fi or Ethernet).
+        onDemandWiFiPolicy = .always
+        let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+        userDefaults?.set(WiFiOnDemandPolicy.always.rawValue, forKey: GlobalConstants.keyOnDemandWiFiPolicy)
+        #endif
+        networkExtensionAdapter.setOnDemandEnabled(true)
     }
     
     func clearDetails() {
@@ -652,8 +671,18 @@ class ViewModel: ObservableObject {
         defaults.removeObject(forKey: "ip")
         defaults.removeObject(forKey: "fqdn")
 
+        // Tear down system On Demand while logged out (cannot reconnect without config).
+        #if os(tvOS)
+        // Clear the preference key so the default-on behavior returns after re-login,
+        // rather than permanently remembering "off" from this logout path.
+        let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+        userDefaults?.removeObject(forKey: GlobalConstants.keyConnectOnDemand)
+        networkExtensionAdapter.setOnDemandEnabled(false)
+        self.connectOnDemand = getConnectOnDemandEnabled()
+        #else
         // Disable and persist On Demand off to keep UI/storage/manager in sync
         setConnectOnDemand(isEnabled: false)
+        #endif
 
         // Clear config JSON (contains server credentials and all settings)
         Preferences.removeConfigFromUserDefaults()
@@ -806,6 +835,27 @@ class ViewModel: ObservableObject {
     }
     
     func setConnectOnDemand(isEnabled: Bool) {
+        #if os(tvOS)
+        // Require a completed login before enabling On Demand. Without a saved
+        // config the system cannot start the tunnel after reboot.
+        if isEnabled && !Preferences.hasConfigInUserDefaults() {
+            logger.warning("setConnectOnDemand: Cannot enable On Demand — not logged in")
+            // Snap the toggle back off after SwiftUI processes the attempted set.
+            DispatchQueue.main.async {
+                self.connectOnDemand = false
+            }
+            return
+        }
+        // tvOS exposes a simple always-connect toggle (no Wi-Fi SSID / cellular
+        // policy UI). Force the default "always" policy so On Demand rules match
+        // any interface and reconnect after reboot on Wi-Fi or Ethernet.
+        if isEnabled {
+            self.onDemandWiFiPolicy = .always
+            let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+            userDefaults?.set(WiFiOnDemandPolicy.always.rawValue, forKey: GlobalConstants.keyOnDemandWiFiPolicy)
+        }
+        #endif
+
         let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
         userDefaults?.set(isEnabled, forKey: GlobalConstants.keyConnectOnDemand)
         self.connectOnDemand = isEnabled
@@ -817,7 +867,14 @@ class ViewModel: ObservableObject {
 
     func getConnectOnDemandEnabled() -> Bool {
         let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+        #if os(tvOS)
+        // Default ON (Tailscale-style): auto-connect after reboot unless the user opts out.
+        // register(defaults:) only applies when the key has never been written.
+        userDefaults?.register(defaults: [GlobalConstants.keyConnectOnDemand: true])
+        return userDefaults?.bool(forKey: GlobalConstants.keyConnectOnDemand) ?? true
+        #else
         return userDefaults?.bool(forKey: GlobalConstants.keyConnectOnDemand) ?? false
+        #endif
     }
 
     func loadOnDemandSettings() {
