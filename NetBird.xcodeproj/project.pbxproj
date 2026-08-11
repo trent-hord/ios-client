@@ -1026,7 +1026,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Skip Crashlytics upload if GoogleService-Info.plist is not present\nGOOGLE_PLIST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\nif [ ! -f \"$GOOGLE_PLIST\" ]; then\n    echo \"GoogleService-Info.plist not found. Skipping Crashlytics upload.\"\n    exit 0\nfi\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+			shellScript = "# Skip Crashlytics upload when Firebase is absent or explicitly disabled\nGOOGLE_PLIST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\nif [ ! -f \"$GOOGLE_PLIST\" ]; then\n    echo \"GoogleService-Info.plist not found. Skipping Crashlytics upload.\"\n    exit 0\nfi\nif [ \"$(/usr/libexec/PlistBuddy -c 'Print :NETBIRD_FIREBASE_DISABLED' \"$GOOGLE_PLIST\" 2>/dev/null)\" = \"true\" ]; then\n    echo \"Firebase is disabled. Skipping Crashlytics upload.\"\n    exit 0\nfi\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
 		};
 		508BD8522AF158F80055E415 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1048,7 +1048,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Skip Crashlytics upload if GoogleService-Info.plist is not present\nGOOGLE_PLIST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\nif [ ! -f \"$GOOGLE_PLIST\" ]; then\n    echo \"GoogleService-Info.plist not found. Skipping Crashlytics upload.\"\n    exit 0\nfi\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+			shellScript = "# Skip Crashlytics upload when Firebase is absent or explicitly disabled\nGOOGLE_PLIST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\nif [ ! -f \"$GOOGLE_PLIST\" ]; then\n    echo \"GoogleService-Info.plist not found. Skipping Crashlytics upload.\"\n    exit 0\nfi\nif [ \"$(/usr/libexec/PlistBuddy -c 'Print :NETBIRD_FIREBASE_DISABLED' \"$GOOGLE_PLIST\" 2>/dev/null)\" = \"true\" ]; then\n    echo \"Firebase is disabled. Skipping Crashlytics upload.\"\n    exit 0\nfi\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

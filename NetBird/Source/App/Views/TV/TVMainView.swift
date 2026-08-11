@@ -90,22 +90,34 @@ struct TVMainView: View {
                             print("Sending config to extension before starting VPN...")
                             #endif
                             viewModel.networkExtensionAdapter.sendConfigToExtension(configJSON) { success in
-                                #if DEBUG
-                                print("Config transfer \(success ? "succeeded" : "failed"), starting VPN connection...")
-                                #endif
-                                // Start VPN only after config transfer completes
-                                viewModel.networkExtensionAdapter.startVPNConnection()
-                                // Config is now available — apply default On Demand so
-                                // the tunnel survives reboot even if this connect attempt
-                                // is interrupted before we observe .connected.
-                                viewModel.ensureOnDemandConfigured()
+                                Task { @MainActor in
+                                    #if DEBUG
+                                    print("Config transfer \(success ? "succeeded" : "failed")")
+                                    #endif
+                                    guard success else {
+                                        // Never install an always-connect rule for an
+                                        // extension that did not receive usable config.
+                                        viewModel.connectPressed = false
+                                        viewModel.buttonLock = false
+                                        viewModel.updateVPNDisplayState()
+                                        return
+                                    }
+
+                                    // Persist the desired system On Demand state before
+                                    // starting, so first login cannot be interrupted before
+                                    // reboot auto-connect is configured.
+                                    viewModel.startVPNAfterSuccessfulTVLogin()
+                                }
                             }
                         } else {
                             #if DEBUG
-                            print("No config found in UserDefaults, starting VPN anyway...")
+                            print("No config found in UserDefaults; aborting VPN start")
                             #endif
-                            // Fallback - try to connect anyway (will likely fail but better than hanging)
-                            viewModel.networkExtensionAdapter.startVPNConnection()
+                            // Starting without current app config could reuse stale
+                            // extension credentials. Reset so the user can retry login.
+                            viewModel.connectPressed = false
+                            viewModel.buttonLock = false
+                            viewModel.updateVPNDisplayState()
                         }
                     },
                     onError: { errorMessage in
@@ -639,5 +651,3 @@ struct TVMainView_Previews: PreviewProvider {
 }
 
 #endif
-
-

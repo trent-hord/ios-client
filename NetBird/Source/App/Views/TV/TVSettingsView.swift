@@ -454,10 +454,10 @@ struct TVChangeServerAlert: View {
                         style: .filled(Color.red),
                         isFocused: focusedButton == .confirm,
                         action: {
-                            viewModel.close()
-                            viewModel.clearDetails()
-                            viewModel.showChangeServerAlert = false
-                            viewModel.navigateToServerView = true
+                            viewModel.prepareForServerChange {
+                                viewModel.showChangeServerAlert = false
+                                viewModel.navigateToServerView = true
+                            }
                         }
                     )
                     .focused($focusedButton, equals: .confirm)
@@ -534,11 +534,9 @@ struct TVRosenpassChangedAlert: View {
                         isFocused: focusedButton == .reconnect,
                         action: {
                             viewModel.showRosenpassChangedAlert = false
-                            viewModel.close()
-                            // Small delay before reconnecting to allow disconnect to complete
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                viewModel.connect()
-                            }
+                            viewModel.restartTVForConfigurationChange(
+                                reconnectWhenOnDemandDisabled: true
+                            )
                         }
                     )
                     .focused($focusedButton, equals: .reconnect)
@@ -697,5 +695,3 @@ struct TVSettingsView_Previews: PreviewProvider {
 }
 
 #endif
-
-

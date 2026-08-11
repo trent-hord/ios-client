@@ -134,6 +134,8 @@ git commit -m "update netbird submodule to v0.x.y"
 
 > **Note:** The app cannot run in the tvOS simulator. To test the app, a physical device running tvOS 17.0 or later needs to be [paired with Xcode](https://support.apple.com/en-us/101262).
 
+For release validation, personal-team packaging, and TestFlight upload steps, see [Building and Uploading NetBird tvOS to TestFlight](TVOS_TESTFLIGHT.md).
+
 ### Firebase Configuration (Optional)
 
 The app supports Firebase for analytics and crash reporting. To enable it, add your `GoogleService-Info.plist` file to the project root. The app will work without Firebase configuration.

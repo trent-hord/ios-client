@@ -25,17 +25,58 @@ private var isRunningUnitTests: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
-/// Configures Firebase from the bundled GoogleService-Info.plist.
-///
-/// Skipped under unit tests: the CI test plist is a dummy and
-/// FirebaseApp.configure() raises an uncaught Objective-C exception on an
-/// invalid app ID, aborting the test host before the runner can connect.
-private func configureFirebaseIfNeeded() {
-    guard !isRunningUnitTests else { return }
-    if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
-       let options = FirebaseOptions(contentsOfFile: path) {
-        FirebaseApp.configure(options: options)
+/// Returns whether a GoogleService plist contains a Firebase configuration that
+/// is safe to pass to `FirebaseApp.configure`. Firebase throws an uncaught
+/// Objective-C exception for placeholder app IDs, so validation must happen
+/// before calling into the SDK.
+func isUsableFirebaseConfiguration(
+    _ configuration: [String: Any],
+    bundleIdentifier: String?
+) -> Bool {
+    if configuration["NETBIRD_FIREBASE_DISABLED"] as? Bool == true {
+        return false
     }
+
+    guard let configuredBundleID = configuration["BUNDLE_ID"] as? String,
+          !configuredBundleID.isEmpty,
+          configuredBundleID == bundleIdentifier,
+          let googleAppID = configuration["GOOGLE_APP_ID"] as? String else {
+        return false
+    }
+
+    let components = googleAppID.split(separator: ":", omittingEmptySubsequences: false)
+    guard components.count >= 4,
+          components[0] == "1",
+          Int(components[1]) != nil,
+          components[2] == "ios",
+          !components[3].isEmpty else {
+        return false
+    }
+
+    return true
+}
+
+/// Configures Firebase only when the bundled GoogleService plist is real and
+/// belongs to the current app. Builds without Firebase remain fully functional.
+private func configureFirebaseIfNeeded() {
+    guard !isRunningUnitTests,
+          FirebaseApp.app() == nil,
+          let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+          let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+          let configuration = try? PropertyListSerialization.propertyList(
+            from: data,
+            options: [],
+            format: nil
+          ) as? [String: Any],
+          isUsableFirebaseConfiguration(
+            configuration,
+            bundleIdentifier: Bundle.main.bundleIdentifier
+          ),
+          let options = FirebaseOptions(contentsOfFile: path) else {
+        return
+    }
+
+    FirebaseApp.configure(options: options)
 }
 
 #if os(iOS)
@@ -174,11 +215,18 @@ struct NetBirdApp: App {
                 viewModel.extensionState = initialStatus
                 viewModel.updateVPNDisplayState()
 
-                // Ensure On Demand system rules match the (tvOS default-on) preference
-                // even when the connection was already up before this app launch.
+                #if os(tvOS)
+                // Reconcile even while disconnected so an existing authenticated tvOS
+                // install adopts default-on without requiring one manual connection.
+                // Credential verification runs off the main actor.
+                viewModel.ensureOnDemandConfigured()
+                #else
+                // Preserve the established iOS behavior: only restore On Demand after
+                // the tunnel itself confirms a successful connection.
                 if initialStatus == .connected {
                     viewModel.ensureOnDemandConfigured()
                 }
+                #endif
             } else {
                 // No matching VPN profile found — still force a widget timeline refresh so
                 // the widget doesn't stay stuck on a transitioning state from a prior

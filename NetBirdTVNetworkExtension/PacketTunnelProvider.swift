@@ -46,8 +46,13 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         logger.info(">>> startTunnel: ENTRY - function was called <<<")
         NSLog("NetBirdTV: startTunnel ENTRY - function was called")
 
-        let optionsDesc = options?.description ?? "nil"
-        logger.info("startTunnel: options = \(optionsDesc, privacy: .public)")
+        let optionKeys = options.map { Array($0.keys).sorted().joined(separator: ",") } ?? "none"
+        logger.info("startTunnel: option keys = \(optionKeys, privacy: .public)")
+
+        let configFromStartOptions = options?[GlobalConstants.optionTVConfigJSON] as? String
+        if let configJSON = configFromStartOptions, !configJSON.isEmpty {
+            logger.info("startTunnel: Received refreshed config in start options")
+        }
 
         // On tvOS, config is loaded from UserDefaults directly in NetBirdAdapter.init()
         // No need to restore to file - the adapter handles this internally.
@@ -68,6 +73,31 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             )
             completionHandler(error)
             return
+        }
+
+        // A provider process can survive a stop/start cycle, so its lazy adapter
+        // may already hold the previous config. Refresh the live client as well as
+        // local storage before evaluating login state.
+        if let configJSON = configFromStartOptions, !configJSON.isEmpty {
+            let updatedConfig = NetBirdAdapter.updateDeviceNameInConfig(
+                configJSON,
+                newName: Device.getName()
+            )
+            do {
+                try adapter.client.setConfigFromJSON(updatedConfig)
+                UserDefaults.standard.set(configJSON, forKey: "netbird_config_json_local")
+                UserDefaults.standard.synchronize()
+                logger.info("startTunnel: Applied and saved config from start options")
+            } catch {
+                logger.error("startTunnel: Failed to load config from start options: \(error.localizedDescription)")
+                let configError = NSError(
+                    domain: "io.netbird.NetBirdTVNetworkExtension",
+                    code: 1004,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to load the supplied NetBird configuration."]
+                )
+                completionHandler(configError)
+                return
+            }
         }
 
         let needsLogin = adapter.needsLogin()
@@ -234,26 +264,25 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     func setConfigFromMainApp(configJSON: String, completionHandler: ((Data?) -> Void)?) {
         logger.info("setConfigFromMainApp: Received config from main app (\(configJSON.count) chars)")
 
-        // Save to extension-local UserDefaults (not shared App Group)
-        UserDefaults.standard.set(configJSON, forKey: "netbird_config_json_local")
-        UserDefaults.standard.synchronize()
-
-        // Also try to load into the adapter's client if it exists
-        if let adapter = adapter {
-            let deviceName = Device.getName()
-            let updatedConfig = NetBirdAdapter.updateDeviceNameInConfig(configJSON, newName: deviceName)
-            do {
-                try adapter.client.setConfigFromJSON(updatedConfig)
-                logger.info("setConfigFromMainApp: Loaded config into SDK client successfully")
-            } catch {
-                logger.error("setConfigFromMainApp: Failed to load config into SDK client: \(error.localizedDescription)")
-            }
-        } else {
-            logger.warning("setConfigFromMainApp: Adapter not initialized, config saved to UserDefaults only")
+        guard let adapter = adapter else {
+            logger.error("setConfigFromMainApp: Adapter is unavailable; rejecting config")
+            completionHandler?("false".data(using: .utf8))
+            return
         }
 
-        let data = "true".data(using: .utf8)
-        completionHandler?(data)
+        let deviceName = Device.getName()
+        let updatedConfig = NetBirdAdapter.updateDeviceNameInConfig(configJSON, newName: deviceName)
+        do {
+            // Validate and apply before replacing the last known-good persisted config.
+            try adapter.client.setConfigFromJSON(updatedConfig)
+            UserDefaults.standard.set(configJSON, forKey: "netbird_config_json_local")
+            UserDefaults.standard.synchronize()
+            logger.info("setConfigFromMainApp: Loaded and saved config successfully")
+            completionHandler?("true".data(using: .utf8))
+        } catch {
+            logger.error("setConfigFromMainApp: Failed to load config into SDK client: \(error.localizedDescription)")
+            completionHandler?("false".data(using: .utf8))
+        }
     }
 
     /// Load config from extension-local storage (used on tvOS where shared UserDefaults fails)

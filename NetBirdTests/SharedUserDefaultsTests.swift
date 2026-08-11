@@ -58,4 +58,91 @@ final class SharedUserDefaultsTests: XCTestCase {
         let value = defaults.bool(forKey: GlobalConstants.keyForceRelayConnection)
         XCTAssertTrue(value, "Force relay connection should default to true")
     }
+
+    func testTVOnDemandFreshInstallDefaultsOnAndMarksMigration() throws {
+        let (suiteName, defaults) = try makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = OnDemandPreferenceStore(defaults: defaults)
+
+        XCTAssertTrue(store.loadTVOSDefaultEnabled())
+        XCTAssertTrue(defaults.bool(forKey: GlobalConstants.keyConnectOnDemand))
+        XCTAssertEqual(
+            defaults.integer(forKey: GlobalConstants.keyTVOnDemandPreferenceVersion),
+            GlobalConstants.currentTVOnDemandPreferenceVersion
+        )
+    }
+
+    func testTVOnDemandLegacyFalseMigratesOnlyOnce() throws {
+        let (suiteName, defaults) = try makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(false, forKey: GlobalConstants.keyConnectOnDemand)
+
+        let store = OnDemandPreferenceStore(defaults: defaults)
+
+        XCTAssertTrue(store.loadTVOSDefaultEnabled(), "Legacy internal false should adopt the new default")
+        store.setTVOSExplicitPreference(false)
+        XCTAssertFalse(store.loadTVOSDefaultEnabled(), "A post-migration user opt-out must be preserved")
+    }
+
+    func testTVOnDemandVersionedOptOutSurvivesRelaunch() throws {
+        let (suiteName, defaults) = try makeIsolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = OnDemandPreferenceStore(defaults: defaults)
+        _ = store.loadTVOSDefaultEnabled()
+        store.setTVOSExplicitPreference(false)
+
+        let reloadedStore = OnDemandPreferenceStore(defaults: defaults)
+        XCTAssertFalse(reloadedStore.loadTVOSDefaultEnabled())
+    }
+
+    func testDummyFirebaseConfigurationIsRejected() {
+        XCTAssertFalse(
+            isUsableFirebaseConfiguration(
+                ["BUNDLE_ID": "io.netbird.app.tv", "GOOGLE_APP_ID": "dummy"],
+                bundleIdentifier: "io.netbird.app.tv"
+            )
+        )
+    }
+
+    func testExplicitlyDisabledFirebaseConfigurationIsRejected() {
+        XCTAssertFalse(
+            isUsableFirebaseConfiguration(
+                ["NETBIRD_FIREBASE_DISABLED": true],
+                bundleIdentifier: "io.netbird.app.tv"
+            )
+        )
+    }
+
+    func testFirebaseConfigurationForAnotherBundleIsRejected() {
+        XCTAssertFalse(
+            isUsableFirebaseConfiguration(
+                [
+                    "BUNDLE_ID": "io.netbird.app",
+                    "GOOGLE_APP_ID": "1:123456789:ios:abcdef123456"
+                ],
+                bundleIdentifier: "io.netbird.app.tv"
+            )
+        )
+    }
+
+    func testValidFirebaseConfigurationIsAccepted() {
+        XCTAssertTrue(
+            isUsableFirebaseConfiguration(
+                [
+                    "BUNDLE_ID": "io.netbird.app.tv",
+                    "GOOGLE_APP_ID": "1:123456789:ios:abcdef123456"
+                ],
+                bundleIdentifier: "io.netbird.app.tv"
+            )
+        )
+    }
+
+    private func makeIsolatedDefaults() throws -> (String, UserDefaults) {
+        let suiteName = "io.netbird.tests.on-demand.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        return (suiteName, defaults)
+    }
 }

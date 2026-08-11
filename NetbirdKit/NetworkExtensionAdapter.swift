@@ -49,6 +49,25 @@ class ConfigSSOListener: NSObject, NetBirdSDKSSOListenerProtocol {
     }
 }
 
+/// Thread-safe result box used to bound the synchronous SDK login check without
+/// holding the serialized Network Extension preference queue for its full retry window.
+private final class AuthenticationProbeState: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedResult: Bool?
+
+    func store(_ result: Bool) {
+        lock.lock()
+        storedResult = result
+        lock.unlock()
+    }
+
+    func load() -> Bool? {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedResult
+    }
+}
+
 public class NetworkExtensionAdapter: ObservableObject {
 
     private let logger = Logger(subsystem: "io.netbird.app", category: "NetworkExtensionAdapter")
@@ -88,6 +107,7 @@ public class NetworkExtensionAdapter: ObservableObject {
 
     private let fetchLock = NSLock()
     private var _isFetchingStatus = false
+    private var onDemandUpdateTask: Task<Bool, Never>?
     private var isFetchingStatus: Bool {
         get { fetchLock.lock(); defer { fetchLock.unlock() }; return _isFetchingStatus }
         set { fetchLock.lock(); defer { fetchLock.unlock() }; _isFetchingStatus = newValue }
@@ -306,7 +326,7 @@ public class NetworkExtensionAdapter: ObservableObject {
             }
 
             // Send config to extension via IPC (settings are already in the JSON)
-            await sendConfigToExtensionAsync(configJSON)
+            _ = await sendConfigToExtensionAsync(configJSON)
 
             // Also send the management URL separately — the config JSON from Go SDK
             // serializes ManagementURL as a nested object, not a plain string,
@@ -337,13 +357,22 @@ public class NetworkExtensionAdapter: ObservableObject {
     }
 
     /// Async wrapper for sendConfigToExtension
-    private func sendConfigToExtensionAsync(_ configJSON: String) async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+    private func sendConfigToExtensionAsync(_ configJSON: String) async -> Bool {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
             sendConfigToExtension(configJSON) { [weak self] success in
                 self?.logger.info("sendConfigToExtensionAsync: IPC result = \(success)")
-                continuation.resume()
+                continuation.resume(returning: success)
             }
         }
+    }
+
+    @MainActor
+    func syncCurrentTVConfigToExtension() async -> Bool {
+        guard let configJSON = Preferences.loadConfigFromUserDefaults(), !configJSON.isEmpty else {
+            logger.error("syncCurrentTVConfigToExtension: No app configuration available")
+            return false
+        }
+        return await sendConfigToExtensionAsync(configJSON)
     }
 
     /// Send the management URL to the extension separately via IPC.
@@ -632,10 +661,22 @@ public class NetworkExtensionAdapter: ObservableObject {
         let sharedDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
         sharedDefaults?.set(configPath, forKey: GlobalConstants.keyWidgetActiveConfigPath)
         sharedDefaults?.set(statePath,  forKey: GlobalConstants.keyWidgetActiveStatePath)
+        #elseif os(tvOS)
+        // Provider messaging is unavailable when the extension process is stopped.
+        // Carry the latest main-app config on every manual start so a server or
+        // security-setting change cannot relaunch with stale extension-local JSON.
+        if let configJSON = Preferences.loadConfigFromUserDefaults(), !configJSON.isEmpty {
+            options[GlobalConstants.optionTVConfigJSON] = configJSON as NSObject
+        }
         #endif
 
         guard let session = self.session else {
             logger.error("startVPNConnection: ERROR - session is nil!")
+            return
+        }
+
+        if session.status == .connected || session.status == .connecting || session.status == .reasserting {
+            logger.info("startVPNConnection: tunnel is already active or starting; skipping duplicate start")
             return
         }
 
@@ -653,33 +694,123 @@ public class NetworkExtensionAdapter: ObservableObject {
         self.vpnManager?.connection.stopVPNTunnel()
     }
 
+    @MainActor
+    func stopAndWaitForDisconnect(timeoutSeconds: Double = 8) async -> Bool {
+        stop()
+        let attempts = max(1, Int(timeoutSeconds / 0.2))
+        for _ in 0..<attempts {
+            let status = vpnManager?.connection.status ?? .invalid
+            if status == .disconnected || status == .invalid {
+                return true
+            }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        logger.warning("stopAndWaitForDisconnect: Timed out waiting for tunnel teardown")
+        return false
+    }
+
+    @MainActor
+    func waitForConnection(timeoutSeconds: Double = 12) async -> Bool {
+        let attempts = max(1, Int(timeoutSeconds / 0.2))
+        for _ in 0..<attempts {
+            let status = vpnManager?.connection.status ?? .invalid
+            if status == .connected {
+                return true
+            }
+            if status == .invalid {
+                return false
+            }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        logger.warning("waitForConnection: Timed out waiting for tunnel startup")
+        return false
+    }
+
     /// Updates the VPN On Demand configuration on the current manager.
     /// When enabled, the system automatically reconnects the VPN after network changes or reboot.
     /// Should only be enabled when the user is logged in to avoid reconnect loops.
-    func setOnDemandEnabled(_ enabled: Bool) {
-        // Ensure a VPN manager is loaded (user may toggle On Demand from Settings
-        // after app launch without having started a tunnel yet in this session).
-        if self.vpnManager == nil {
-            logger.info("setOnDemandEnabled: VPN manager not loaded, loading preferences first")
-            Task { @MainActor in
-                _ = await self.loadCurrentConnectionState()
-                self.applyOnDemandEnabled(enabled)
-            }
-            return
+    @MainActor
+    func setOnDemandEnabled(
+        _ enabled: Bool,
+        authenticationVerified: Bool = false,
+        completion: ((Bool) -> Void)? = nil
+    ) {
+        // A user-requested disable must not sit behind a potentially slow
+        // disconnected authentication probe.
+        if !enabled {
+            onDemandUpdateTask?.cancel()
         }
-        applyOnDemandEnabled(enabled)
+
+        // Chain updates so rapid toggles and lifecycle reconciliation cannot save
+        // stale values out of order. The most recently requested value is applied last.
+        let previousTask = onDemandUpdateTask
+        let task = Task { @MainActor [weak self] in
+            _ = await previousTask?.value
+            guard let self else {
+                completion?(false)
+                return false
+            }
+
+            let success = await self.applyOnDemandEnabled(
+                enabled,
+                authenticationVerified: authenticationVerified
+            )
+            completion?(success)
+            return success
+        }
+        onDemandUpdateTask = task
+    }
+
+    @MainActor
+    func updateOnDemandEnabled(_ enabled: Bool, authenticationVerified: Bool = false) async -> Bool {
+        await withCheckedContinuation { continuation in
+            setOnDemandEnabled(enabled, authenticationVerified: authenticationVerified) { success in
+                continuation.resume(returning: success)
+            }
+        }
     }
 
     /// Applies the On Demand enabled flag and rules to the current VPN manager.
-    private func applyOnDemandEnabled(_ enabled: Bool) {
-        guard let manager = self.vpnManager else {
-            logger.warning("setOnDemandEnabled: No VPN manager available")
-            return
+    @MainActor
+    private func applyOnDemandEnabled(_ enabled: Bool, authenticationVerified: Bool) async -> Bool {
+        if self.vpnManager == nil {
+            logger.info("setOnDemandEnabled: VPN manager not loaded, loading preferences first")
+            _ = await self.loadCurrentConnectionState()
         }
 
-        if enabled && !canEnableOnDemand() {
-            logger.warning("setOnDemandEnabled: Refusing to enable On Demand — user is not logged in")
-            return
+        guard let manager = self.vpnManager else {
+            // With no saved manager there is nothing to disable. Enabling still
+            // requires the normal first-connect flow to create and authorize one.
+            if !enabled {
+                logger.info("setOnDemandEnabled: No VPN manager exists; already disabled")
+                return true
+            }
+            logger.warning("setOnDemandEnabled: No VPN manager available")
+            return false
+        }
+
+        if enabled {
+            let canEnable = await canEnableOnDemand(authenticationVerified: authenticationVerified)
+            if !canEnable {
+                logger.warning("setOnDemandEnabled: Refusing to enable On Demand — user is not logged in")
+                if manager.isOnDemandEnabled {
+                    manager.isOnDemandEnabled = false
+                    manager.onDemandRules = []
+                    do {
+                        try await manager.saveToPreferences()
+                        logger.info("setOnDemandEnabled: Suspended stale On Demand profile after auth failure")
+                    } catch {
+                        try? await manager.loadFromPreferences()
+                        logger.error("setOnDemandEnabled: Failed to suspend stale profile: \(error.localizedDescription)")
+                    }
+                }
+                return false
+            }
+        }
+
+        if onDemandConfigurationMatches(manager: manager, enabled: enabled) {
+            logger.info("setOnDemandEnabled: Configuration already matches \(enabled ? "enabled" : "disabled")")
+            return true
         }
 
         if enabled {
@@ -702,23 +833,94 @@ public class NetworkExtensionAdapter: ObservableObject {
             manager.isEnabled = true
         }
 
-        manager.saveToPreferences { error in
-            if let error = error {
-                self.logger.error("setOnDemandEnabled: Failed to save preferences: \(error.localizedDescription)")
-            } else {
-                self.logger.info("setOnDemandEnabled: On Demand \(enabled ? "enabled" : "disabled") successfully")
-            }
+        do {
+            try await manager.saveToPreferences()
+            self.vpnManager = manager
+            self.session = manager.connection as? NETunnelProviderSession
+            logger.info("setOnDemandEnabled: On Demand \(enabled ? "enabled" : "disabled") successfully")
+            return true
+        } catch {
+            // Discard the locally mutated state so a later idempotence check does
+            // not mistake a failed save for persisted system configuration.
+            try? await manager.loadFromPreferences()
+            logger.error("setOnDemandEnabled: Failed to save preferences: \(error.localizedDescription)")
+            return false
         }
     }
 
-    /// Whether it is safe to enable On Demand (user has a valid login session).
-    /// iOS uses the shared `keyLoginRequired` flag; tvOS cannot rely on that
-    /// app-group flag for extension IPC and instead checks local config presence.
-    private func canEnableOnDemand() -> Bool {
+    private func onDemandConfigurationMatches(manager: NETunnelProviderManager, enabled: Bool) -> Bool {
+        guard manager.isOnDemandEnabled == enabled else { return false }
+        guard enabled else { return true }
+        guard manager.isEnabled else { return false }
+
+        let rules = manager.onDemandRules ?? []
         #if os(tvOS)
-        // keyLoginRequired is not maintained on tvOS (shared defaults don't work
-        // between app and extension). Gate on whether a login config exists.
-        return Preferences.hasConfigInUserDefaults()
+        guard rules.count == 1, let connectRule = rules.first as? NEOnDemandRuleConnect else {
+            return false
+        }
+        return connectRule.interfaceTypeMatch == .any
+        #else
+        return !rules.isEmpty
+        #endif
+    }
+
+    /// Whether it is safe to enable On Demand (user has a valid login session).
+    /// iOS uses the shared `keyLoginRequired` flag. tvOS verifies the saved
+    /// credentials with the SDK unless a live connected tunnel already proved them.
+    private func canEnableOnDemand(authenticationVerified: Bool) async -> Bool {
+        #if os(tvOS)
+        guard Preferences.hasConfigInUserDefaults() else { return false }
+        if authenticationVerified { return true }
+
+        guard let configJSON = Preferences.loadConfigFromUserDefaults() else { return false }
+        let cacheDirectory = Preferences.cacheDirectory()
+        let deviceName = Device.getName()
+        let osVersion = Device.getOsVersion()
+        let osName = Device.getOsName()
+
+        let probeState = AuthenticationProbeState()
+        let probe = Task.detached(priority: .utility) {
+            let result: Bool
+            if let client = NetBirdSDKNewClient(
+                "",
+                "",
+                cacheDirectory,
+                "",
+                deviceName,
+                osVersion,
+                osName,
+                nil,
+                nil
+            ) {
+                do {
+                    try client.setConfigFromJSON(configJSON)
+                    result = !client.isLoginRequired()
+                } catch {
+                    result = false
+                }
+            } else {
+                result = false
+            }
+            probeState.store(result)
+        }
+
+        // The SDK's synchronous auth RPC can retry for roughly two minutes while
+        // offline. Bound reconciliation to ten seconds and observe cancellation so
+        // Disable & Disconnect can supersede it immediately.
+        for _ in 0..<50 {
+            if Task.isCancelled {
+                probe.cancel()
+                return false
+            }
+            if let result = probeState.load() {
+                return result
+            }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+
+        probe.cancel()
+        logger.warning("canEnableOnDemand: Authentication verification timed out")
+        return false
         #else
         let defaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
         let loginRequired = defaults?.bool(forKey: GlobalConstants.keyLoginRequired) ?? true
