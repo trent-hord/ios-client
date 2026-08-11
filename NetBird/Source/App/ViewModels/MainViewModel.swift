@@ -412,9 +412,16 @@ class ViewModel: ObservableObject {
     #endif
     
     func close() -> Void {
+        // Warn user that On Demand will reconnect if rules match.
+        // On iOS this evaluates per-interface Wi-Fi/cellular policies; on tvOS
+        // On Demand is a simple always-connect toggle so any enabled state reconnects.
         #if os(iOS)
-        // Warn user that On Demand will reconnect if rules match
         if connectOnDemand && onDemandRulesAllowConnect() {
+            showOnDemandDisconnectAlert = true
+            return
+        }
+        #elseif os(tvOS)
+        if connectOnDemand {
             showOnDemandDisconnectAlert = true
             return
         }
@@ -457,8 +464,18 @@ class ViewModel: ObservableObject {
 
     /// Disables On Demand and disconnects (user chose to prevent auto-reconnect).
     func closeWithOnDemandDisabled() {
-        setConnectOnDemand(isEnabled: false)
-        performClose()
+        setConnectOnDemand(isEnabled: false) { [weak self] success in
+            guard let self else { return }
+            if success {
+                // The system Connect rule is now durably disabled, so stopping the
+                // tunnel cannot race an automatic reconnect.
+                self.performClose()
+            } else {
+                // Keep the tunnel running and let the user retry instead of showing
+                // an Off toggle while the system profile remains On Demand-enabled.
+                self.showOnDemandDisconnectAlert = true
+            }
+        }
     }
 
     func updateVPNDisplayState(priorExtensionState: NEVPNStatus? = nil) {
@@ -617,6 +634,8 @@ class ViewModel: ObservableObject {
     // loadAllFromPreferences() is slow and variable; without this guard a stale .disconnecting
     // completion can arrive after a newer .disconnected one, causing a spurious Disconnecting flash.
     private var isCheckingExtensionState = false
+    private var onDemandPreferenceRevision = 0
+    private var onDemandReconciliationSuspended = false
 
     func checkExtensionState() {
         guard !isCheckingExtensionState else { return }
@@ -639,21 +658,53 @@ class ViewModel: ObservableObject {
 
         if status == .connected {
             routeViewModel.getRoutes()
-            if connectOnDemand {
-                networkExtensionAdapter.setOnDemandEnabled(true)
-            }
+            ensureOnDemandConfigured()
         }
     }
+
+    /// Pushes the persisted On Demand preference into the system VPN configuration.
+    /// On tvOS this is on by default (Tailscale-style); call after connect and on
+    /// app activation so upgrades pick up the default without a manual re-toggle.
+    func ensureOnDemandConfigured() {
+        #if os(tvOS)
+        guard !onDemandReconciliationSuspended else { return }
+        if connectOnDemand {
+            // Force always-connect rules on any interface (Wi-Fi or Ethernet).
+            onDemandWiFiPolicy = .always
+            let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+            userDefaults?.set(WiFiOnDemandPolicy.always.rawValue, forKey: GlobalConstants.keyOnDemandWiFiPolicy)
+        }
+        // Reconcile both directions so an explicit opt-out repairs a stale system
+        // profile instead of showing Off while the OS continues reconnecting.
+        networkExtensionAdapter.setOnDemandEnabled(
+            connectOnDemand,
+            authenticationVerified: extensionState == .connected
+        )
+        #else
+        guard connectOnDemand else { return }
+        networkExtensionAdapter.setOnDemandEnabled(true)
+        #endif
+    }
     
-    func clearDetails() {
+    func clearDetails(disableSystemOnDemand: Bool = true, clearTVExtensionConfig: Bool = true) {
         self.ip = ""
         self.fqdn = ""
         self.ipv6 = ""
         defaults.removeObject(forKey: "ip")
         defaults.removeObject(forKey: "fqdn")
 
+        // Tear down system On Demand while logged out (cannot reconnect without config).
+        #if os(tvOS)
+        onDemandReconciliationSuspended = true
+        // This is an effective-state suspension only. Preserve the user's desired
+        // preference so an explicit opt-out survives logout and server changes.
+        if disableSystemOnDemand {
+            networkExtensionAdapter.setOnDemandEnabled(false)
+        }
+        #else
         // Disable and persist On Demand off to keep UI/storage/manager in sync
         setConnectOnDemand(isEnabled: false)
+        #endif
 
         // Clear config JSON (contains server credentials and all settings)
         Preferences.removeConfigFromUserDefaults()
@@ -666,7 +717,127 @@ class ViewModel: ObservableObject {
 
         #if os(tvOS)
         // Also clear extension-local config to prevent stale credentials
-        networkExtensionAdapter.clearExtensionConfig()
+        if clearTVExtensionConfig {
+            networkExtensionAdapter.clearExtensionConfig()
+        }
+        #endif
+    }
+
+    /// Suspends effective On Demand without changing the user's preference, clears
+    /// extension credentials while IPC is still available, then stops the tunnel.
+    func prepareForServerChange(completion: @escaping () -> Void) {
+        #if os(tvOS)
+        onDemandReconciliationSuspended = true
+        networkExtensionAdapter.setOnDemandEnabled(false) { [weak self] success in
+            guard let self else { return }
+            guard success else {
+                self.onDemandReconciliationSuspended = false
+                self.logger.error("prepareForServerChange: Failed to disable system On Demand")
+                return
+            }
+
+            self.networkExtensionAdapter.clearExtensionConfig { [weak self] cleared in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    if !cleared {
+                        // A stopped provider cannot receive IPC. This remains safe:
+                        // On Demand is already disabled, and every later manual start
+                        // carries fresh config in startVPNTunnel(options:).
+                        self.logger.warning("prepareForServerChange: Provider was unavailable for config clear")
+                    }
+                    self.performClose()
+                    self.clearDetails(disableSystemOnDemand: false, clearTVExtensionConfig: false)
+                    completion()
+                }
+            }
+        }
+        #else
+        performClose()
+        clearDetails()
+        completion()
+        #endif
+    }
+
+    /// Completes the tvOS login transaction: persist the desired effective On
+    /// Demand state first, then start without racing a preferences save.
+    func startVPNAfterSuccessfulTVLogin() {
+        #if os(tvOS)
+        onDemandReconciliationSuspended = true
+        networkExtensionAdapter.setOnDemandEnabled(
+            connectOnDemand,
+            authenticationVerified: true
+        ) { [weak self] success in
+            guard let self else { return }
+            self.onDemandReconciliationSuspended = false
+            guard success else {
+                self.connectPressed = false
+                self.buttonLock = false
+                self.updateVPNDisplayState()
+                return
+            }
+            self.networkExtensionAdapter.startVPNConnection(loginVerified: true)
+        }
+        #endif
+    }
+
+    /// Transfers updated tvOS configuration, performs an ordered tunnel restart,
+    /// and restores the user's desired On Demand state after teardown completes.
+    func restartTVForConfigurationChange(reconnectWhenOnDemandDisabled: Bool) {
+        #if os(tvOS)
+        let desiredOnDemand = connectOnDemand
+        let authenticationVerified = extensionState == .connected
+        onDemandReconciliationSuspended = true
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            guard await self.networkExtensionAdapter.updateOnDemandEnabled(false) else {
+                self.onDemandReconciliationSuspended = false
+                return
+            }
+
+            // Updating the running provider avoids a stale-config window. If IPC is
+            // unavailable, the ordered manual start below still carries the current
+            // config in startVPNTunnel(options:) and refreshes the live adapter.
+            let configSynced = await self.networkExtensionAdapter.syncCurrentTVConfigToExtension()
+            if !configSynced {
+                self.logger.warning("restartTVForConfigurationChange: Will refresh config during restart")
+            }
+
+            guard await self.networkExtensionAdapter.stopAndWaitForDisconnect() else {
+                // Keep effective On Demand disabled: restoring it while the old
+                // provider is still active could relaunch stale configuration.
+                self.logger.error("restartTVForConfigurationChange: Tunnel did not stop")
+                return
+            }
+
+            let shouldReconnect = desiredOnDemand || reconnectWhenOnDemandDisabled
+            if shouldReconnect {
+                self.networkExtensionAdapter.startVPNConnection(
+                    loginVerified: authenticationVerified
+                )
+                guard await self.networkExtensionAdapter.waitForConnection() else {
+                    // Do not restore the system rule after a failed start. This
+                    // leaves the device safely disconnected instead of looping on
+                    // stale or invalid extension configuration.
+                    self.logger.error("restartTVForConfigurationChange: Restart did not connect")
+                    return
+                }
+            }
+
+            if desiredOnDemand {
+                let restored = await self.networkExtensionAdapter.updateOnDemandEnabled(
+                    true,
+                    authenticationVerified: true
+                )
+                self.onDemandReconciliationSuspended = false
+                if !restored {
+                    self.logger.error("restartTVForConfigurationChange: Failed to restore On Demand")
+                }
+            } else {
+                self.onDemandReconciliationSuspended = false
+            }
+        }
         #endif
     }
     
@@ -675,7 +846,11 @@ class ViewModel: ObservableObject {
     func updatePreSharedKey() {
         configProvider.preSharedKey = presharedKey
         if configProvider.commit() {
+            #if os(tvOS)
+            self.restartTVForConfigurationChange(reconnectWhenOnDemandDisabled: false)
+            #else
             self.close()
+            #endif
             self.presharedKeySecure = true
             self.showPreSharedKeyChangedInfo = true
         } else {
@@ -687,7 +862,11 @@ class ViewModel: ObservableObject {
         presharedKey = ""
         configProvider.preSharedKey = ""
         if configProvider.commit() {
+            #if os(tvOS)
+            self.restartTVForConfigurationChange(reconnectWhenOnDemandDisabled: false)
+            #else
             self.close()
+            #endif
             self.presharedKeySecure = false
         } else {
             print("Failed to remove preshared key")
@@ -805,19 +984,84 @@ class ViewModel: ObservableObject {
         #endif
     }
     
-    func setConnectOnDemand(isEnabled: Bool) {
+    func setConnectOnDemand(isEnabled: Bool, completion: ((Bool) -> Void)? = nil) {
         let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
-        userDefaults?.set(isEnabled, forKey: GlobalConstants.keyConnectOnDemand)
-        self.connectOnDemand = isEnabled
-        networkExtensionAdapter.setOnDemandEnabled(isEnabled)
+        let previousPreference = userDefaults?.object(forKey: GlobalConstants.keyConnectOnDemand) == nil
+            ? getConnectOnDemandEnabled()
+            : (userDefaults?.bool(forKey: GlobalConstants.keyConnectOnDemand) ?? false)
+
+        #if os(tvOS)
+        // Require a completed login before enabling On Demand. Without a saved
+        // config the system cannot start the tunnel after reboot.
+        if isEnabled && !Preferences.hasConfigInUserDefaults() {
+            logger.warning("setConnectOnDemand: Cannot enable On Demand — not logged in")
+            // Snap the toggle back off after SwiftUI processes the attempted set.
+            DispatchQueue.main.async {
+                self.connectOnDemand = previousPreference
+                completion?(false)
+            }
+            return
+        }
+        // tvOS exposes a simple always-connect toggle (no Wi-Fi SSID / cellular
+        // policy UI). Force the default "always" policy so On Demand rules match
+        // any interface and reconnect after reboot on Wi-Fi or Ethernet.
         if isEnabled {
-            self.showOnDemandAlert = true
+            self.onDemandWiFiPolicy = .always
+            let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+            userDefaults?.set(WiFiOnDemandPolicy.always.rawValue, forKey: GlobalConstants.keyOnDemandWiFiPolicy)
+        }
+        #endif
+
+        #if os(tvOS)
+        if let userDefaults {
+            OnDemandPreferenceStore(defaults: userDefaults).setTVOSExplicitPreference(isEnabled)
+        }
+        #else
+        userDefaults?.set(isEnabled, forKey: GlobalConstants.keyConnectOnDemand)
+        #endif
+
+        self.connectOnDemand = isEnabled
+        onDemandPreferenceRevision += 1
+        let revision = onDemandPreferenceRevision
+
+        networkExtensionAdapter.setOnDemandEnabled(
+            isEnabled,
+            authenticationVerified: extensionState == .connected
+        ) { [weak self] success in
+            guard let self else { return }
+            guard self.onDemandPreferenceRevision == revision else {
+                completion?(false)
+                return
+            }
+
+            if success {
+                if isEnabled {
+                    self.showOnDemandAlert = true
+                }
+            } else {
+                #if os(tvOS)
+                if let userDefaults {
+                    OnDemandPreferenceStore(defaults: userDefaults).setTVOSExplicitPreference(previousPreference)
+                }
+                #else
+                userDefaults?.set(previousPreference, forKey: GlobalConstants.keyConnectOnDemand)
+                #endif
+                self.connectOnDemand = previousPreference
+            }
+            completion?(success)
         }
     }
 
     func getConnectOnDemandEnabled() -> Bool {
         let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+        #if os(tvOS)
+        // Default ON (Tailscale-style). The versioned migration converts legacy
+        // internal false values once, then preserves every explicit user opt-out.
+        guard let userDefaults else { return true }
+        return OnDemandPreferenceStore(defaults: userDefaults).loadTVOSDefaultEnabled()
+        #else
         return userDefaults?.bool(forKey: GlobalConstants.keyConnectOnDemand) ?? false
+        #endif
     }
 
     func loadOnDemandSettings() {

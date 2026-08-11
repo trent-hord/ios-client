@@ -90,18 +90,34 @@ struct TVMainView: View {
                             print("Sending config to extension before starting VPN...")
                             #endif
                             viewModel.networkExtensionAdapter.sendConfigToExtension(configJSON) { success in
-                                #if DEBUG
-                                print("Config transfer \(success ? "succeeded" : "failed"), starting VPN connection...")
-                                #endif
-                                // Start VPN only after config transfer completes
-                                viewModel.networkExtensionAdapter.startVPNConnection()
+                                Task { @MainActor in
+                                    #if DEBUG
+                                    print("Config transfer \(success ? "succeeded" : "failed")")
+                                    #endif
+                                    guard success else {
+                                        // Never install an always-connect rule for an
+                                        // extension that did not receive usable config.
+                                        viewModel.connectPressed = false
+                                        viewModel.buttonLock = false
+                                        viewModel.updateVPNDisplayState()
+                                        return
+                                    }
+
+                                    // Persist the desired system On Demand state before
+                                    // starting, so first login cannot be interrupted before
+                                    // reboot auto-connect is configured.
+                                    viewModel.startVPNAfterSuccessfulTVLogin()
+                                }
                             }
                         } else {
                             #if DEBUG
-                            print("No config found in UserDefaults, starting VPN anyway...")
+                            print("No config found in UserDefaults; aborting VPN start")
                             #endif
-                            // Fallback - try to connect anyway (will likely fail but better than hanging)
-                            viewModel.networkExtensionAdapter.startVPNConnection()
+                            // Starting without current app config could reuse stale
+                            // extension credentials. Reset so the user can retry login.
+                            viewModel.connectPressed = false
+                            viewModel.buttonLock = false
+                            viewModel.updateVPNDisplayState()
                         }
                     },
                     onError: { errorMessage in
@@ -238,6 +254,11 @@ struct TVConnectionView: View {
                 )
                 .padding(.horizontal, 120)
                 .padding(.bottom, 50)
+            }
+
+            // On Demand disconnect confirmation (mirrors iOS alert)
+            if viewModel.showOnDemandDisconnectAlert {
+                TVOnDemandDisconnectAlert(viewModel: viewModel)
             }
         }
     }
@@ -545,6 +566,83 @@ struct TVCompactStatCard: View {
     }
 }
 
+/// Shown when the user tries to disconnect while VPN On Demand is enabled.
+/// Mirrors the iOS alert: disconnecting alone would just reconnect the tunnel.
+struct TVOnDemandDisconnectAlert: View {
+    @ObservedObject var viewModel: ViewModel
+
+    private enum FocusedButton {
+        case cancel, disableAndDisconnect
+    }
+
+    @FocusState private var focusedButton: FocusedButton?
+    @State private var lastFocusedButton: FocusedButton = .cancel
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+
+            VStack(spacing: 40) {
+                Image(systemName: "arrow.trianglehead.2.clockwise")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+
+                Text("VPN On Demand Active")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundColor(TVColors.textAlert)
+
+                Text("VPN On Demand is enabled and will automatically reconnect the VPN. Do you want to disable On Demand and disconnect?")
+                    .font(.system(size: 24))
+                    .foregroundColor(TVColors.textAlert)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 600)
+
+                HStack(spacing: 40) {
+                    TVAlertButton(
+                        title: "Cancel",
+                        style: .outlined,
+                        isFocused: focusedButton == .cancel,
+                        action: { viewModel.showOnDemandDisconnectAlert = false }
+                    )
+                    .focused($focusedButton, equals: .cancel)
+
+                    TVAlertButton(
+                        title: "Disable & Disconnect",
+                        style: .filled(Color.red),
+                        isFocused: focusedButton == .disableAndDisconnect,
+                        action: {
+                            viewModel.showOnDemandDisconnectAlert = false
+                            viewModel.closeWithOnDemandDisabled()
+                        }
+                    )
+                    .focused($focusedButton, equals: .disableAndDisconnect)
+                }
+                .focusSection()
+            }
+            .padding(60)
+            .background(
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(TVColors.bgSideDrawer)
+            )
+        }
+        .onAppear {
+            focusedButton = .cancel
+        }
+        .onChange(of: focusedButton) { oldValue, newValue in
+            _ = oldValue
+            if let newValue = newValue {
+                lastFocusedButton = newValue
+            } else {
+                focusedButton = lastFocusedButton
+            }
+        }
+        .onExitCommand {
+            viewModel.showOnDemandDisconnectAlert = false
+        }
+    }
+}
+
 struct TVMainView_Previews: PreviewProvider {
     static var previews: some View {
         TVMainView()
@@ -553,5 +651,3 @@ struct TVMainView_Previews: PreviewProvider {
 }
 
 #endif
-
-
