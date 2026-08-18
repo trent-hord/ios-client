@@ -18,6 +18,7 @@
 		443782C52EDF288A00F9FA94 /* TVSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443782C32EDF288A00F9FA94 /* TVSettingsView.swift */; };
 		443782C62EDF288A00F9FA94 /* TVPeersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443782C22EDF288A00F9FA94 /* TVPeersView.swift */; };
 		443782C72EDF288A00F9FA94 /* TVNetworksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443782C12EDF288A00F9FA94 /* TVNetworksView.swift */; };
+		E1E0F0012F90000100000001 /* TVExitNodeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E0F0002F90000100000001 /* TVExitNodeSelector.swift */; };
 		443782C82EDF288A00F9FA94 /* TVMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443782C02EDF288A00F9FA94 /* TVMainView.swift */; };
 		443782C92EDF293400F9FA94 /* NetBirdApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8911A2A792A15007C48FC /* NetBirdApp.swift */; };
 		443782CA2EDF296500F9FA94 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8911C2A792A15007C48FC /* MainView.swift */; };
@@ -112,6 +113,7 @@
 		509CCD6A2BE908C000B7C2D8 /* RoutesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CCD692BE908C000B7C2D8 /* RoutesViewModel.swift */; };
 		509CCD6C2BE90D0E00B7C2D8 /* PeerTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CCD6B2BE90D0E00B7C2D8 /* PeerTabView.swift */; };
 		509CCD6E2BE90D2100B7C2D8 /* RouteTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CCD6D2BE90D2100B7C2D8 /* RouteTabView.swift */; };
+		E1D0E0032F80000200000001 /* ExitNodeSelectorCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D0E0022F80000200000001 /* ExitNodeSelectorCard.swift */; };
 		50A8911B2A792A15007C48FC /* NetBirdApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8911A2A792A15007C48FC /* NetBirdApp.swift */; };
 		50A8911D2A792A15007C48FC /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8911C2A792A15007C48FC /* MainView.swift */; };
 		50A8911F2A792A16007C48FC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 50A8911E2A792A16007C48FC /* Assets.xcassets */; };
@@ -285,6 +287,7 @@
 		443782BD2EDF284A00F9FA94 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		443782C02EDF288A00F9FA94 /* TVMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVMainView.swift; sourceTree = "<group>"; };
 		443782C12EDF288A00F9FA94 /* TVNetworksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVNetworksView.swift; sourceTree = "<group>"; };
+		E1E0F0002F90000100000001 /* TVExitNodeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVExitNodeSelector.swift; sourceTree = "<group>"; };
 		443782C22EDF288A00F9FA94 /* TVPeersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVPeersView.swift; sourceTree = "<group>"; };
 		443782C32EDF288A00F9FA94 /* TVSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVSettingsView.swift; sourceTree = "<group>"; };
 		4483B26C2F19331A00BD9F66 /* TVColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVColors.swift; sourceTree = "<group>"; };
@@ -326,6 +329,7 @@
 		509CCD692BE908C000B7C2D8 /* RoutesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutesViewModel.swift; sourceTree = "<group>"; };
 		509CCD6B2BE90D0E00B7C2D8 /* PeerTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerTabView.swift; sourceTree = "<group>"; };
 		509CCD6D2BE90D2100B7C2D8 /* RouteTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteTabView.swift; sourceTree = "<group>"; };
+		E1D0E0022F80000200000001 /* ExitNodeSelectorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitNodeSelectorCard.swift; sourceTree = "<group>"; };
 		50A891172A792A15007C48FC /* NetBird.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NetBird.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50A8911A2A792A15007C48FC /* NetBirdApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetBirdApp.swift; sourceTree = "<group>"; };
 		50A8911C2A792A15007C48FC /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -493,6 +497,7 @@
 				44F3E39A2EE2F9FA00C87FEC /* TVAuthView.swift */,
 				443782C02EDF288A00F9FA94 /* TVMainView.swift */,
 				443782C12EDF288A00F9FA94 /* TVNetworksView.swift */,
+				E1E0F0002F90000100000001 /* TVExitNodeSelector.swift */,
 				443782C22EDF288A00F9FA94 /* TVPeersView.swift */,
 				443782C32EDF288A00F9FA94 /* TVSettingsView.swift */,
 				AA1B2C012F4E5A0100D1E2F3 /* TVGradientBackground.swift */,
@@ -671,6 +676,7 @@
 				506331FA2AF52AB900BC8F0E /* CustomLottieView.swift */,
 				506332012AF9415500BC8F0E /* CustomTextField.swift */,
 				50BB17402C30239400518BCA /* RouteCard.swift */,
+				E1D0E0022F80000200000001 /* ExitNodeSelectorCard.swift */,
 				E1A0B0002F5E000100000001 /* EmptyTabPlaceholder.swift */,
 				E1C0D0002F72000100000001 /* AppButton.swift */,
 				E1B0C0002F60000100000001 /* NetworkWarningBanner.swift */,
@@ -1081,6 +1087,7 @@
 				443782C92EDF293400F9FA94 /* NetBirdApp.swift in Sources */,
 				443782C62EDF288A00F9FA94 /* TVPeersView.swift in Sources */,
 				443782C72EDF288A00F9FA94 /* TVNetworksView.swift in Sources */,
+				E1E0F0012F90000100000001 /* TVExitNodeSelector.swift in Sources */,
 				44F3E39B2EE2F9FA00C87FEC /* TVAuthView.swift in Sources */,
 				4483B26D2F19331A00BD9F66 /* TVColors.swift in Sources */,
 				443782C82EDF288A00F9FA94 /* TVMainView.swift in Sources */,
@@ -1156,6 +1163,7 @@
 				509CCD6A2BE908C000B7C2D8 /* RoutesViewModel.swift in Sources */,
 				50A8911B2A792A15007C48FC /* NetBirdApp.swift in Sources */,
 				509CCD6E2BE90D2100B7C2D8 /* RouteTabView.swift in Sources */,
+				E1D0E0032F80000200000001 /* ExitNodeSelectorCard.swift in Sources */,
 				E1A0B0012F5E000100000001 /* EmptyTabPlaceholder.swift in Sources */,
 				E1C0D0012F72000100000001 /* AppButton.swift in Sources */,
 				E1B0C0012F60000100000001 /* NetworkWarningBanner.swift in Sources */,
