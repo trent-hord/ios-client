@@ -37,13 +37,16 @@ struct TVSettingsView: View {
                             TVSettingsToggleRow(
                                 icon: "arrow.trianglehead.2.clockwise",
                                 title: "VPN On Demand",
-                                subtitle: "On by default. Auto-connects after reboot and network changes. Turn off to allow a lasting manual disconnect.",
+                                subtitle: viewModel.vpnDisplayState == .connected || viewModel.connectOnDemand
+                                    ? "Automatically reconnects after reboot and network changes."
+                                    : "Connect the VPN before enabling automatic reconnection.",
                                 isOn: Binding(
                                     get: { viewModel.connectOnDemand },
                                     set: { newValue in
                                         viewModel.setConnectOnDemand(isEnabled: newValue)
                                     }
-                                )
+                                ),
+                                isDisabled: !viewModel.connectOnDemand && viewModel.vpnDisplayState != .connected
                             )
 
                             TVSettingsRow(
@@ -461,7 +464,8 @@ struct TVChangeServerAlert: View {
                         style: .filled(Color.red),
                         isFocused: focusedButton == .confirm,
                         action: {
-                            viewModel.prepareForServerChange {
+                            viewModel.closeWithOnDemandDisabled(showRetryAlertOnFailure: false) {
+                                viewModel.clearDetails()
                                 viewModel.showChangeServerAlert = false
                                 viewModel.navigateToServerView = true
                             }
@@ -518,7 +522,9 @@ struct TVRosenpassChangedAlert: View {
                     .font(.system(size: 40, weight: .bold))
                     .foregroundColor(TVColors.textAlert)
 
-                Text("Rosenpass settings have changed. Reconnect to apply the new security settings.")
+                Text(viewModel.connectOnDemand
+                    ? "Rosenpass settings have changed. Reconnecting will disable VPN On Demand; re-enable it afterward."
+                    : "Rosenpass settings have changed. Reconnect to apply the new security settings.")
                     .font(.system(size: 24))
                     .foregroundColor(TVColors.textAlert)
                     .multilineTextAlignment(.center)
@@ -536,14 +542,17 @@ struct TVRosenpassChangedAlert: View {
 
                     // Reconnect button
                     TVAlertButton(
-                        title: "Reconnect",
+                        title: viewModel.connectOnDemand ? "Disable On Demand & Reconnect" : "Reconnect",
                         style: .filled(Color.blue),
                         isFocused: focusedButton == .reconnect,
                         action: {
-                            viewModel.showRosenpassChangedAlert = false
-                            viewModel.restartTVForConfigurationChange(
-                                reconnectWhenOnDemandDisabled: true
-                            )
+                            viewModel.closeWithOnDemandDisabled(showRetryAlertOnFailure: false) {
+                                viewModel.showRosenpassChangedAlert = false
+                                // Small delay before reconnecting to allow disconnect to complete
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    viewModel.connect()
+                                }
+                            }
                         }
                     )
                     .focused($focusedButton, equals: .reconnect)
@@ -599,6 +608,14 @@ struct TVPreSharedKeyAlert: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 600)
 
+                if viewModel.connectOnDemand {
+                    Text("Changing the key disconnects the VPN and disables VPN On Demand. Reconnect, then re-enable it.")
+                        .font(.system(size: 18))
+                        .foregroundColor(.orange)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 600)
+                }
+
                 // Text field for key input
                 TextField("Pre-shared key", text: $keyText)
                     .font(.system(size: 24))
@@ -636,8 +653,9 @@ struct TVPreSharedKeyAlert: View {
                             title: "Remove",
                             color: .red,
                             action: {
-                                viewModel.removePreSharedKey()
-                                isPresented = false
+                                viewModel.removePreSharedKey {
+                                    isPresented = false
+                                }
                             }
                         )
                     }
@@ -649,8 +667,9 @@ struct TVPreSharedKeyAlert: View {
                         action: {
                             if !isInvalid && !keyText.isEmpty {
                                 viewModel.presharedKey = keyText
-                                viewModel.updatePreSharedKey()
-                                isPresented = false
+                                viewModel.updatePreSharedKey {
+                                    isPresented = false
+                                }
                             }
                         }
                     )

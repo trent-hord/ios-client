@@ -173,19 +173,6 @@ struct NetBirdApp: App {
                 viewModel.disconnectPressed = false
                 viewModel.extensionState = initialStatus
                 viewModel.updateVPNDisplayState()
-
-                #if os(tvOS)
-                // Reconcile even while disconnected so an existing authenticated tvOS
-                // install adopts default-on without requiring one manual connection.
-                // Credential verification runs off the main actor.
-                viewModel.ensureOnDemandConfigured()
-                #else
-                // Preserve the established iOS behavior: only restore On Demand after
-                // the tunnel itself confirms a successful connection.
-                if initialStatus == .connected {
-                    viewModel.ensureOnDemandConfigured()
-                }
-                #endif
             } else {
                 // No matching VPN profile found — still force a widget timeline refresh so
                 // the widget doesn't stay stuck on a transitioning state from a prior
