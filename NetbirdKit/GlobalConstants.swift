@@ -29,6 +29,10 @@ struct GlobalConstants {
     // start the tunnel without the main app running (mirrors WidgetConstants).
     static let keyWidgetActiveConfigPath = "netbird.widget.activeConfigPath"
     static let keyWidgetActiveStatePath  = "netbird.widget.activeStatePath"
+    // Exit node names from the last successful route read. The network map is only
+    // readable through the running tunnel, so the Shortcuts exit-node picker uses
+    // this cache to offer suggestions while the VPN is down (mirrors WidgetConstants).
+    static let keyWidgetExitNodes = "netbird.widget.exitNodes"
 
     /// startVPNTunnel(options:) key. Set by the main app when it has just verified the
     /// login state itself (its own isLoginRequired() check, or a login it just completed),

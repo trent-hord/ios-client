@@ -143,9 +143,25 @@ class RoutesViewModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, self.routeReadGeneration == generation else { return }
                 self.routeInfo = details.routeSelectionInfo
+                self.cacheExitNodeNames()
                 print("Route count: \(details.routeSelectionInfo.count)")
             }
         }
+    }
+
+    /// Shares the exit node names with the widget extension. The network map is only
+    /// readable through the running tunnel, so the Shortcuts exit-node picker falls
+    /// back to this cache while the VPN is down. Deliberately not cleared by
+    /// `clearRoutes()`: the cache exists precisely for when the tunnel is gone, and
+    /// the next non-empty read replaces it wholesale. An empty list never overwrites
+    /// it either — a reply with no routes also arrives when the extension isn't ready
+    /// yet, and a stale name is harmless (the intent validates against the live map),
+    /// while wiping a good cache empties the picker for no reason.
+    private func cacheExitNodeNames() {
+        let names = exitNodes.map { $0.name }
+        guard !names.isEmpty else { return }
+        UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)?
+            .set(names, forKey: GlobalConstants.keyWidgetExitNodes)
     }
     
     func selectRoute(route: RoutesSelectionInfo) {

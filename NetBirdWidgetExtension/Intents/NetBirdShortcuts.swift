@@ -35,5 +35,27 @@ struct NetBirdShortcuts: AppShortcutsProvider {
             shortTitle: "VPN Status",
             systemImageName: "network"
         )
+
+        AppShortcut(
+            intent: UseExitNodeIntent(),
+            phrases: [
+                "Use \(.applicationName) exit node",
+                "Set \(.applicationName) exit node",
+                "Enable \(.applicationName) exit node"
+            ],
+            shortTitle: "Use Exit Node",
+            systemImageName: "globe"
+        )
+
+        AppShortcut(
+            intent: StopUsingExitNodeIntent(),
+            phrases: [
+                "Stop using \(.applicationName) exit node",
+                "Turn off \(.applicationName) exit node",
+                "Disable \(.applicationName) exit node"
+            ],
+            shortTitle: "Stop Exit Node",
+            systemImageName: "xmark.circle"
+        )
     }
 }
