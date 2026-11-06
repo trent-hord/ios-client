@@ -51,6 +51,12 @@ jobs:
             tests/ExitNodeConnectionTests.swift \
             -o "$RUNNER_TEMP/ExitNodeConnectionTests"
           "$RUNNER_TEMP/ExitNodeConnectionTests"
+          xcrun swiftc -swift-version 5 \
+            NetbirdKit/ExitNodeConnection.swift \
+            NetbirdKit/StatusDetails.swift \
+            tests/PeerIdentityTests.swift \
+            -o "$RUNNER_TEMP/PeerIdentityTests"
+          "$RUNNER_TEMP/PeerIdentityTests"
 
       - name: Get netbird-core commit
         id: core-sha

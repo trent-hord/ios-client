@@ -721,6 +721,7 @@ class ViewModel: ObservableObject {
                     a.direct == b.direct && a.connStatusUpdate == b.connStatusUpdate
                 }) {
                     print("Setting new peer info: \(sortedPeerInfo.count) Peers")
+                    PeerInfo.preserveListIdentities(in: sortedPeerInfo, from: self.peerViewModel.peerInfo)
                     self.peerViewModel.peerInfo = sortedPeerInfo
                 }
             }

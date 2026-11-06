@@ -132,7 +132,9 @@ struct TVPeerListContent: View {
             .frame(maxWidth: .infinity)
             
             // Right Side - Peer Details
-            if let peer = selectedPeer {
+            // Keep the selected row, but display its latest status sample.
+            if let selectedID = selectedPeer?.id,
+               let peer = viewModel.peerViewModel.peerInfo.first(where: { $0.id == selectedID }) {
                 TVPeerDetailView(peer: peer)
                     .frame(width: 500)
                     .transition(.move(edge: .trailing))

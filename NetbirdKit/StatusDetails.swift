@@ -100,6 +100,26 @@ extension PeerInfo: Equatable {
 }
 
 extension PeerInfo {
+    /// The SDK regenerates UUIDs for each status response. Retain the current
+    /// UI identity so a new RTT sample does not reset list focus or selection.
+    static func preserveListIdentities(in peers: [PeerInfo], from previous: [PeerInfo]) {
+        let previousIDs = Dictionary(
+            previous.compactMap { peer in peer.listIdentityKey.map { ($0, peer.id) } },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for peer in peers {
+            if let key = peer.listIdentityKey, let id = previousIDs[key] {
+                peer.id = id
+            }
+        }
+    }
+
+    private var listIdentityKey: String? {
+        if !pubKey.isEmpty { return "key:\(pubKey)" }
+        if !ip.isEmpty { return "ip:\(ip)" }
+        return nil
+    }
+
     var exitNodeSnapshot: ExitNodePeerSnapshot {
         ExitNodePeerSnapshot(
             key: pubKey, hostname: fqdn, ip: ip, connectionStatus: connStatus,
