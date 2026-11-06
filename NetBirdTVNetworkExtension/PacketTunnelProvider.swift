@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  PacketTunnelProvider.swift
 //  NetBirdTVNetworkExtension
@@ -10,7 +11,7 @@ import Network
 import os
 import NetBirdSDK
 
-private let logger = Logger(subsystem: "io.netbird.app.tv.extension", category: "PacketTunnelProvider")
+private let logger = Logger(subsystem: "com.trentfinity.vpn.tv.extension", category: "PacketTunnelProvider")
 
 // SSO Listener for config initialization
 /// Used by initializeConfig to check if SSO is supported and save initial config
@@ -46,7 +47,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     /// running extension). The pending start is completed once loginTV succeeds.
     /// Owns all access to the parked-start state. Network Extension lifecycle calls,
     /// SDK callbacks, IPC handlers, and the watchdog can all run on different threads.
-    private let parkedStartQueue = DispatchQueue(label: "io.netbird.tv.parkedStart")
+    private let parkedStartQueue = DispatchQueue(label: "com.trentfinity.vpn.tv.parkedStart")
     private var pendingStartCompletion: ((Error?) -> Void)?
     private var pendingStartWatchdog: DispatchWorkItem?
     private var pendingStartGeneration: UInt = 0
@@ -73,7 +74,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
         guard let adapter = adapter else {
             let error = NSError(
-                domain: "io.netbird.NetBirdTVNetworkExtension",
+                domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
                 code: 1003,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to initialize NetBird adapter."]
             )
@@ -114,7 +115,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         // If the start was parked waiting for login (e.g. the user cancelled the auth
         // sheet), release it as cancelled so the system doesn't hang on teardown.
         failPendingStartIfParked(NSError(
-            domain: "io.netbird.NetBirdTVNetworkExtension",
+            domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
             code: 1005,
             userInfo: [NSLocalizedDescriptionKey: "Login cancelled."]
         ))
@@ -148,7 +149,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             let watchdog = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
                 let didFail = self.failPendingStartIfParked(NSError(
-                    domain: "io.netbird.NetBirdTVNetworkExtension",
+                    domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
                     code: 1001,
                     userInfo: [NSLocalizedDescriptionKey: "Login required."]
                 ), expectedGeneration: generation)
@@ -192,7 +193,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
         guard let adapter = adapter else {
             pending(NSError(
-                domain: "io.netbird.NetBirdTVNetworkExtension",
+                domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
                 code: 1003,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to initialize NetBird adapter."]
             ))
@@ -223,7 +224,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         adapter.onLoginRequired = { [weak self] in
             logger.error("onLoginRequired: session expired mid-tunnel — tearing down")
             self?.cancelTunnelWithError(NSError(
-                domain: "io.netbird.NetBirdTVNetworkExtension",
+                domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
                 code: 1001,
                 userInfo: [NSLocalizedDescriptionKey: "Login required."]
             ))
@@ -651,7 +652,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                     // Auth can't proceed (server unreachable, device auth unsupported…);
                     // a parked start would otherwise wait out the full watchdog timeout.
                     self?.failPendingStartIfParked(NSError(
-                        domain: "io.netbird.NetBirdTVNetworkExtension",
+                        domain: "com.trentfinity.vpn.NetBirdTVNetworkExtension",
                         code: 1006,
                         userInfo: [NSLocalizedDescriptionKey: "Login failed: \(error?.localizedDescription ?? "unknown error")"]
                     ))

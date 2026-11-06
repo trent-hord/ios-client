@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  NetBirdAdapter.swift
 //  NetBirdiOS
@@ -11,7 +12,7 @@ import NetBirdSDK
 import os
 
 /// Logger for NetBirdAdapter - visible in Console.app
-private let adapterLogger = Logger(subsystem: "io.netbird.adapter", category: "NetBirdAdapter")
+private let adapterLogger = Logger(subsystem: "com.trentfinity.vpn.adapter", category: "NetBirdAdapter")
 
 // URL Opener for Login Flow
 class LoginURLOpener: NSObject, NetBirdSDKURLOpenerProtocol {
@@ -118,7 +119,7 @@ public class NetBirdAdapter {
     /// trigger flag + notification from the extension.
     var onLoginRequired: (() -> Void)?
 
-    private let stopQueue = DispatchQueue(label: "io.netbird.adapter.stop")
+    private let stopQueue = DispatchQueue(label: "com.trentfinity.vpn.adapter.stop")
 
     /// Tunnel device file descriptor.
     /// On iOS: searches for the utun control socket file descriptor by iterating through
@@ -356,7 +357,7 @@ public class NetBirdAdapter {
                 guard let fd = self.tunnelFileDescriptor, fd > 0 else {
                     adapterLogger.error("start: Invalid tunnel file descriptor (nil or 0) - cannot start VPN")
                     completionHandler(NSError(
-                        domain: "io.netbird.NetbirdNetworkExtension",
+                        domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                         code: 1004,
                         userInfo: [NSLocalizedDescriptionKey: "Invalid tunnel file descriptor. The VPN tunnel may not be properly configured."]
                     ))
@@ -374,7 +375,7 @@ public class NetBirdAdapter {
                 try self.client.run(fd, interfaceName: ifName, envList: envList)
             } catch {
                 completionHandler(NSError(
-                    domain: "io.netbird.NetbirdNetworkExtension",
+                    domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                     code: 1001,
                     userInfo: [
                         NSLocalizedDescriptionKey: "Netbird client startup failed: \(error.localizedDescription)",
@@ -553,7 +554,7 @@ public class NetBirdAdapter {
         let configPath = ""
         #else
         guard let configPath = Preferences.configFile() else {
-            handleError(NSError(domain: "io.netbird", code: 1003, userInfo: [NSLocalizedDescriptionKey: "App group container unavailable"]))
+            handleError(NSError(domain: "com.trentfinity.vpn", code: 1003, userInfo: [NSLocalizedDescriptionKey: "App group container unavailable"]))
             return
         }
         #endif
@@ -566,7 +567,7 @@ public class NetBirdAdapter {
             let deviceName = Device.getName()
             auth.login(withDeviceName: errListener, urlOpener: urlOpener, forceDeviceAuth: forceDeviceAuth, deviceName: deviceName)
         } else {
-            handleError(NSError(domain: "io.netbird", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Failed to create Auth object"]))
+            handleError(NSError(domain: "com.trentfinity.vpn", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Failed to create Auth object"]))
         }
     }
 

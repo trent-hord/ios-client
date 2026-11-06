@@ -1,4 +1,5 @@
 #!/bin/bash
+# Modified for Trentfinity VPN on 2026-11-05.
 # Script to build NetBird iOS/tvOS bindings using gomobile
 # Usage: ./build-go-lib.sh [--tvos] [version]
 #   --tvos    Build for tvOS (uses gomobile-netbird fork, adds tvos/tvossimulator targets)
@@ -185,7 +186,7 @@ if [ "$tvos" = true ]; then
 
   gomobile-netbird bind \
     -target=ios,iossimulator,tvos,tvossimulator \
-    -bundleid=io.netbird.framework \
+    -bundleid=com.trentfinity.vpn.framework \
     -ldflags="-X github.com/netbirdio/netbird/version.version=$version" \
     -o "$app_path/NetBirdSDK.xcframework" \
     "$(pwd)/client/ios/NetBirdSDK"
@@ -197,7 +198,7 @@ else
 
   gomobile bind \
     -target=ios,iossimulator \
-    -bundleid=io.netbird.framework \
+    -bundleid=com.trentfinity.vpn.framework \
     -ldflags="-X github.com/netbirdio/netbird/version.version=$version" \
     -o "$app_path/NetBirdSDK.xcframework" \
     "$(pwd)/client/ios/NetBirdSDK"

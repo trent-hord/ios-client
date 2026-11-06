@@ -1,3 +1,4 @@
+# Modified for Trentfinity VPN on 2026-11-05.
 name: Scratch Build
 
 on:
@@ -36,6 +37,7 @@ concurrency:
 
 jobs:
   gate:
+    if: github.repository == 'netbirdio/ios-client'
     name: Resolve version
     runs-on: ubuntu-latest
     outputs:

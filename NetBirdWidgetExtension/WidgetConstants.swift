@@ -1,10 +1,11 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 import Foundation
 
 enum WidgetConstants {
-    static let appGroupSuite = "group.io.netbird.app"
-    static let deepLinkConnect = URL(string: "netbird://connect")
-    static let deepLinkDisconnect = URL(string: "netbird://disconnect")
-    static let deepLinkLogin = URL(string: "netbird://login")
+    static let appGroupSuite = "group.com.trentfinity.vpn"
+    static let deepLinkConnect = URL(string: "trentfinity://connect")
+    static let deepLinkDisconnect = URL(string: "trentfinity://disconnect")
+    static let deepLinkLogin = URL(string: "trentfinity://login")
 
     // UserDefaults keys (must match GlobalConstants in NetbirdKit)
     static let keyVPNStatus = "netbird.widget.vpnStatus"

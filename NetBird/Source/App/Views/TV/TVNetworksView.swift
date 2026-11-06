@@ -2,6 +2,8 @@
 //  TVNetworksView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: clarify upstream service references.
+//
 //  Networks/Routes view optimized for Apple TV.
 //
 //  Displays network routes that can be enabled/disabled.
@@ -215,7 +217,7 @@ struct TVNoNetworksView: View {
                 .font(.system(size: 44, weight: .bold))
                 .foregroundColor(TVColors.textPrimary)
 
-            Text("Connect to NetBird to see available networks,\nor configure network routes in your NetBird admin.")
+            Text("Connect to your NetBird network to see available resources,\nor configure network routes in your NetBird admin.")
                 .font(.system(size: 32))
                 .foregroundColor(TVColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -238,8 +240,8 @@ struct TVNoNetworksView: View {
         .sheet(isPresented: $showDocsQR) {
             TVQRCodeSheet(
                 url: "https://docs.netbird.io/how-to/networks",
-                title: "Network Resources",
-                subtitle: "Scan this QR code to visit our docs"
+                title: "NetBird Network Resources",
+                subtitle: "Scan to read the upstream NetBird guides"
             )
         }
     }

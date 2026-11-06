@@ -2,6 +2,8 @@
 //  TVAuthView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: independent app branding.
+//
 //  Authentication view for tvOS.
 //  Since Safari isn't available on Apple TV, we show users
 //  a QR code and device code to enter on another device (phone/computer).
@@ -99,10 +101,7 @@ struct TVAuthView: View {
                 // Right Side - Device Code
                 VStack(spacing: 40) {
                     // App logo
-                    Image("netbird-logo-menu")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 200)
+                    TrentfinityTVBrand(markSize: 64, textSize: 32)
 
                     // Device code display
                     if let code = displayUserCode {

@@ -2,6 +2,8 @@
 //  TVServerView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: branding and NetBird Cloud labeling.
+//
 //  Server configuration view for tvOS.
 //
 //  Allows users to change the management server URL and optionally
@@ -202,12 +204,10 @@ struct TVServerView: View {
                         // Use NetBird button
                         Button(action: useNetBirdServer) {
                             HStack(spacing: 12) {
-                                Image("icon-netbird-button")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 28, height: 28)
+                                Image(systemName: "cloud")
+                                    .font(.system(size: 26))
 
-                                Text("Use NetBird")
+                                Text("Use NetBird Cloud")
                                     .font(.system(size: 24))
                             }
                             .foregroundColor(.accentColor)
@@ -254,11 +254,7 @@ struct TVServerView: View {
 
                 // Right Side - Info panel
                 VStack(alignment: .leading, spacing: 30) {
-                    Image("netbird-logo-menu")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 200)
-                        .opacity(0.5)
+                    TrentfinityTVBrand(markSize: 56, textSize: 27)
 
                     Spacer()
 
@@ -270,7 +266,7 @@ struct TVServerView: View {
 
                     Spacer()
 
-                    Text("docs.netbird.io")
+                    Text("Compatible with NetBird Cloud\nand self-hosted NetBird servers")
                         .font(.system(size: 20))
                         .foregroundColor(TVColors.textSecondary.opacity(0.6))
                 }

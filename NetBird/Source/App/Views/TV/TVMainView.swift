@@ -2,6 +2,8 @@
 //  TVMainView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: independent app branding.
+//
 //  Main navigation structure for tvOS.
 //
 //  Key differences from iOS:
@@ -19,7 +21,7 @@ import os
 
 #if os(tvOS)
 
-private let buttonLogger = Logger(subsystem: "io.netbird.app", category: "TVConnectionButton")
+private let buttonLogger = Logger(subsystem: "com.trentfinity.vpn", category: "TVConnectionButton")
 
 struct TVMainView: View {
     @EnvironmentObject var viewModel: ViewModel
@@ -62,10 +64,7 @@ struct TVMainView: View {
             }
         }
         .overlay(alignment: .topLeading) {
-            Image("netbird-logo-menu")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 160)
+            TrentfinityTVBrand(markSize: 44, textSize: 23)
                 .allowsHitTesting(false)
         }
         .environmentObject(viewModel)

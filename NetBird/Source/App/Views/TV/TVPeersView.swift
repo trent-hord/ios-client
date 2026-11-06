@@ -2,6 +2,8 @@
 //  TVPeersView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: clarify upstream service references.
+//
 //  Peers list view optimized for Apple TV.
 //
 //  Key differences from iOS PeerTabView:
@@ -395,7 +397,7 @@ struct TVNoPeersView: View {
                 .font(.system(size: 44, weight: .bold))
                 .foregroundColor(TVColors.textPrimary)
 
-            Text("Connect to NetBird to see your peers,\nor add devices to your network.")
+            Text("Connect to your NetBird network to see your peers,\nor add devices to your network.")
                 .font(.system(size: 32))
                 .foregroundColor(TVColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -418,8 +420,8 @@ struct TVNoPeersView: View {
         .sheet(isPresented: $showDocsQR) {
             TVQRCodeSheet(
                 url: "https://docs.netbird.io",
-                title: "Documentation",
-                subtitle: "Scan this QR code to visit our docs"
+                title: "NetBird Documentation",
+                subtitle: "Scan to read the upstream NetBird guides"
             )
         }
     }

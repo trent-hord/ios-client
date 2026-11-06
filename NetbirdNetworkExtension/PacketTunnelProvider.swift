@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  PacketTunnelProvider.swift
 //  NetbirdNetworkExtension
@@ -236,7 +237,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
         guard let adapter = adapter else {
             let error = NSError(
-                domain: "io.netbird.NetbirdNetworkExtension",
+                domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                 code: 1003,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to initialize NetBird adapter."]
             )
@@ -269,7 +270,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             // and intercepts all network traffic — including ASWebAuthenticationSession requests
             // to the OAuth server — causing "Page not found" during re-auth with On Demand enabled.
             completeTunnelStart(with: NSError(
-                domain: "io.netbird.NetbirdNetworkExtension",
+                domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                 code: 1001,
                 userInfo: [NSLocalizedDescriptionKey: "Login required."]
             ))
@@ -318,7 +319,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 self.signalLoginRequired()
                 self.updateWidgetStatus("disconnected")
                 let error = NSError(
-                    domain: "io.netbird.NetbirdNetworkExtension",
+                    domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                     code: 1001,
                     userInfo: [NSLocalizedDescriptionKey: "Login required."]
                 )
@@ -394,7 +395,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         // of the start attempt rather than to its success. Latched, so a start that already
         // reported is untouched.
         let stoppedBeforeConnect = completeTunnelStart(with: NSError(
-            domain: "io.netbird.NetbirdNetworkExtension",
+            domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
             code: 1005,
             userInfo: [NSLocalizedDescriptionKey: "Tunnel stopped before the connection was established (reason \(reason.rawValue))."]
         ))
@@ -752,7 +753,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             self.finishRestartTransaction(generation: generation, schedulePending: false)
             self.updateWidgetStatus("disconnected")
             self.cancelTunnelWithError(NSError(
-                domain: "io.netbird.NetbirdNetworkExtension",
+                domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                 code: 1002,
                 userInfo: [NSLocalizedDescriptionKey: "VPN restart timed out."]
             ))
@@ -838,7 +839,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                         AppLogger.shared.log("restartClient: start failed due to expired login — signaling and tearing down")
                         self.signalLoginRequired()
                         self.cancelTunnelWithError(NSError(
-                            domain: "io.netbird.NetbirdNetworkExtension",
+                            domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                             code: 1001,
                             userInfo: [NSLocalizedDescriptionKey: "Login required."]
                         ))
@@ -947,7 +948,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             restartRetryCount = 0
             restartCompletion = nil
             cancelTunnelWithError(NSError(
-                domain: "io.netbird.NetbirdNetworkExtension",
+                domain: "com.trentfinity.vpn.NetbirdNetworkExtension",
                 code: 1005,
                 userInfo: [NSLocalizedDescriptionKey: "Could not restart NetBird after a network change."]
             ))
@@ -1234,7 +1235,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             // The app is often not running when another VPN takes over, so the
             // Control Center toggle would keep showing NetBird as connected.
             if #available(iOS 18.0, *) {
-                ControlCenter.shared.reloadControls(ofKind: "io.netbird.vpn.control")
+                ControlCenter.shared.reloadControls(ofKind: "com.trentfinity.vpn.vpn.control")
             }
         }
     }

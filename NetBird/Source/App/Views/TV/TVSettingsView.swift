@@ -2,6 +2,8 @@
 //  TVSettingsView.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: branding, attribution, and project links.
+//
 //  Settings view for Apple TV.
 //
 //  Replaces the iOS side drawer menu.
@@ -44,6 +46,7 @@ struct TVSettingsView: View {
         managed ? "Managed by your organization" : text
     }
     @State private var showDocsQRCode = false
+    @State private var showAbout = false
 
     var body: some View {
         ZStack {
@@ -185,9 +188,16 @@ struct TVSettingsView: View {
 
                         TVSettingsSection(title: "Info") {
                             TVSettingsRow(
+                                icon: "infinity",
+                                title: "About Trentfinity VPN",
+                                subtitle: "Independent project, source code, support, and license",
+                                action: { showAbout = true }
+                            )
+
+                            TVSettingsRow(
                                 icon: "qrcode.viewfinder",
-                                title: "Documentation",
-                                subtitle: "Scan QR code to visit docs.netbird.io",
+                                title: "NetBird Documentation",
+                                subtitle: "Upstream guides for your NetBird network",
                                 action: { showDocsQRCode = true }
                             )
 
@@ -227,9 +237,12 @@ struct TVSettingsView: View {
         .sheet(isPresented: $showDocsQRCode) {
             TVQRCodeSheet(
                 url: "https://docs.netbird.io",
-                title: "Documentation",
-                subtitle: "Scan this QR code to visit our docs"
+                title: "NetBird Documentation",
+                subtitle: "Scan to read the upstream NetBird guides"
             )
+        }
+        .fullScreenCover(isPresented: $showAbout) {
+            TVAboutTrentfinityView(appVersion: appVersion, goVersion: goVersion)
         }
         .fullScreenCover(isPresented: $showPreSharedKeyAlert) {
             TVPreSharedKeyAlert(
@@ -247,6 +260,99 @@ struct TVSettingsView: View {
     private var goVersion: String {
         let version = NetBirdSDKGoClientVersion()
         return version.isEmpty ? "unknown" : version
+    }
+}
+
+/// Project information stays readable on Apple TV; links open by QR on a phone.
+private struct TVAboutTrentfinityView: View {
+    let appVersion: String
+    let goVersion: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var destination: ProjectDestination?
+
+    var body: some View {
+        ZStack {
+            TVGradientBackground()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 26) {
+                    TrentfinityTVBrand(markSize: 72, textSize: 38)
+
+                    Text("Version \(appVersion) · NetBird core \(goVersion)")
+                        .font(.system(size: 24))
+                        .foregroundColor(TVColors.textSecondary)
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("An independently maintained NetBird client for Apple TV. Not affiliated with or endorsed by NetBird GmbH.")
+                        Text("Based on the NetBird Apple client, with upstream work by NetBird GmbH and contributors. Trentfinity VPN is distributed under the GNU General Public License, version 3.")
+                    }
+                    .font(.system(size: 24))
+                    .foregroundColor(TVColors.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    TVSettingsSection(title: "Project") {
+                        TVSettingsRow(
+                            icon: "chevron.left.forwardslash.chevron.right",
+                            title: "Source & Updates",
+                            subtitle: "View this fork's code and project information on GitHub",
+                            action: { destination = .source }
+                        )
+                        TVSettingsRow(
+                            icon: "bubble.left.and.bubble.right",
+                            title: "Support & Issues",
+                            subtitle: "Report an issue with Trentfinity VPN",
+                            action: { destination = .support }
+                        )
+                        TVSettingsRow(
+                            icon: "doc.text",
+                            title: "GNU GPLv3 License",
+                            subtitle: "Read the license and your rights to use, share, and modify the app",
+                            action: { destination = .license }
+                        )
+                    }
+
+                    TVSettingsRow(
+                        icon: "arrow.left",
+                        title: "Back to Settings",
+                        subtitle: "Close project information",
+                        action: { dismiss() }
+                    )
+                }
+                .frame(maxWidth: 1120, alignment: .leading)
+                .padding(80)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .sheet(item: $destination) { destination in
+            TVQRCodeSheet(
+                url: destination.url,
+                title: destination.title,
+                subtitle: "Scan with your phone to open this project's GitHub page"
+            )
+        }
+    }
+
+    private enum ProjectDestination: String, Identifiable {
+        case source, support, license
+
+        var id: String { rawValue }
+
+        var url: String {
+            switch self {
+            case .source: return GlobalConstants.projectSourceURL
+            case .support: return GlobalConstants.projectSupportURL
+            case .license: return GlobalConstants.projectLicenseURL
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .source: return "Trentfinity VPN Source"
+            case .support: return "Trentfinity VPN Support"
+            case .license: return "GNU GPLv3 License"
+            }
+        }
     }
 }
 
@@ -579,7 +685,7 @@ struct TVOnDemandDisconnectAlert: View {
                     .font(.system(size: 40, weight: .bold))
                     .foregroundColor(TVColors.textAlert)
 
-                Text("NetBird will reconnect automatically. Do you want to turn Connect On Demand off and disconnect?")
+                Text("Trentfinity VPN will reconnect automatically. Do you want to turn Connect On Demand off and disconnect?")
                     .font(.system(size: 24))
                     .foregroundColor(TVColors.textAlert)
                     .multilineTextAlignment(.center)

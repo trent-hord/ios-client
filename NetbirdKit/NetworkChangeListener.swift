@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  RouteNotifier.swift
 //  NetBirdiOS
@@ -28,7 +29,7 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
     // `invalidate()` is called before the adapter is discarded so any in-flight or
     // late Go callback becomes a no-op. All Go callbacks are serialized onto a single
     // queue so invalidation and callback handling can't race.
-    private let callbackQueue = DispatchQueue(label: "io.netbird.NetworkChangeListener")
+    private let callbackQueue = DispatchQueue(label: "com.trentfinity.vpn.NetworkChangeListener")
     private var isValid = true
 
     private var tunnelManager: PacketTunnelProviderSettingsManager?

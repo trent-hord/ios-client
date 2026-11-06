@@ -4,28 +4,30 @@
 //
 //  Created by Pascal Fischer on 01.08.23.
 //
+//  Modified for Trentfinity VPN on 2026-11-05: branding and project attribution.
 
 import SwiftUI
 import NetBirdSDK
 
 struct AboutView: View {
-    @EnvironmentObject var viewModel: ViewModel
-
     var body: some View {
         List {
             Section {
                 HStack {
                     Spacer()
                     VStack(spacing: 12) {
-                        Image("netbird-logo-menu")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 120)
+                        HStack(spacing: 10) {
+                            Image(systemName: "infinity")
+                                .font(.system(size: 32, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                            Text("Trentfinity VPN")
+                                .font(.title3.weight(.semibold))
+                        }
                         VStack(spacing: 4) {
                             Text("Version \(appVersion)")
                                 .font(.subheadline)
                                 .foregroundColor(Color("TextSecondary"))
-                            Text("Core \(goVersion)")
+                            Text("NetBird core \(goVersion)")
                                 .font(.caption)
                                 .foregroundColor(Color("TextSecondary"))
                         }
@@ -35,65 +37,42 @@ struct AboutView: View {
                 .listRowBackground(Color.clear)
             }
 
-            Section {
-                if let termsURL = URL(string: "https://netbird.io/terms") {
-                    Link(destination: termsURL) {
-                        HStack {
-                            Text("License agreement")
-                                .foregroundColor(Color("TextPrimary"))
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                                .foregroundColor(Color("TextSecondary"))
-                                .font(.system(size: 14))
-                        }
-                    }
-                }
-
-                if let privacyURL = URL(string: "https://netbird.io/privacy") {
-                    Link(destination: privacyURL) {
-                        HStack {
-                            Text("Privacy policy")
-                                .foregroundColor(Color("TextPrimary"))
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                                .foregroundColor(Color("TextSecondary"))
-                                .font(.system(size: 14))
-                        }
-                    }
-                }
+            Section("Independent project") {
+                Text("Trentfinity VPN is an independently maintained NetBird client. It is not affiliated with or endorsed by NetBird GmbH.")
+                    .foregroundColor(Color("TextSecondary"))
             }
 
-            Section {
-                Button("Join Beta Program") {
-                    viewModel.showBetaProgramAlert = true
-                }
+            Section("Project") {
+                projectLink("Source & updates", destination: GlobalConstants.projectSourceURL)
+                projectLink("Support & issues", destination: GlobalConstants.projectSupportURL)
+                projectLink("GNU GPLv3 license", destination: GlobalConstants.projectLicenseURL)
             }
 
-            Section {
-                HStack {
-                    Spacer()
-                    Text("\u{00A9} \(String(Calendar.current.component(.year, from: Date()))) NetBird all rights reserved")
-                        .font(.footnote)
-                        .foregroundColor(Color("TextSecondary"))
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
+            Section("Open-source credits") {
+                Text("Based on the NetBird Apple client. Upstream work by NetBird GmbH and contributors; fork changes by Trentfinity VPN contributors.")
+                Text("This app is distributed under the GNU General Public License, version 3. Its source code and license are available through the links above.")
             }
+            .font(.footnote)
+            .foregroundColor(Color("TextSecondary"))
         }
         .listStyle(InsetGroupedListStyle())
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: $viewModel.showBetaProgramAlert) {
-            Alert(
-                title: Text("Join TestFlight Beta"),
-                message: Text("By signing up for TestFlight you will receive new updates early and can give us valuable feedback before the official release."),
-                primaryButton: .default(Text("Sign Up")) {
-                    if let url = URL(string: "https://testflight.apple.com/join/jISzXOP8") {
-                        UIApplication.shared.open(url)
-                    }
-                },
-                secondaryButton: .cancel()
-            )
+    }
+
+    @ViewBuilder
+    private func projectLink(_ title: String, destination: String) -> some View {
+        if let url = URL(string: destination) {
+            Link(destination: url) {
+                HStack {
+                    Text(title)
+                        .foregroundColor(Color("TextPrimary"))
+                    Spacer()
+                    Image(systemName: "arrow.up.right.square")
+                        .foregroundColor(Color("TextSecondary"))
+                        .font(.system(size: 14))
+                }
+            }
         }
     }
 

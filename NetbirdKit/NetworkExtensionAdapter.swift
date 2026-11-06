@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  NetworkExtensionAdapter.swift
 //  NetBirdiOS
@@ -79,7 +80,7 @@ private nonisolated final class LoginRetryState: @unchecked Sendable {
 
 public class NetworkExtensionAdapter: ObservableObject {
 
-    private let logger = Logger(subsystem: "io.netbird.app", category: "NetworkExtensionAdapter")
+    private let logger = Logger(subsystem: "com.trentfinity.vpn", category: "NetworkExtensionAdapter")
 
     #if os(tvOS)
     static let defaultManagementURL = "https://api.netbird.io"
@@ -89,12 +90,12 @@ public class NetworkExtensionAdapter: ObservableObject {
     var vpnManager: NETunnelProviderManager?
 
     #if os(tvOS)
-    var extensionID = "io.netbird.app.tv.extension"
-    var extensionName = "NetBird"
+    var extensionID = "com.trentfinity.vpn.tv.extension"
+    var extensionName = GlobalConstants.appDisplayName
     private let loginRetryState = LoginRetryState()
     #else
-    var extensionID = "\(Bundle.main.bundleIdentifier ?? "io.netbird.app").NetbirdNetworkExtension"
-    var extensionName = "NetBird Network Extension"
+    var extensionID = "\(Bundle.main.bundleIdentifier ?? "com.trentfinity.vpn").NetbirdNetworkExtension"
+    var extensionName = GlobalConstants.appDisplayName
     #endif
 
     let decoder = PropertyListDecoder()
@@ -891,7 +892,7 @@ public class NetworkExtensionAdapter: ObservableObject {
         // serial queue is what makes `settled` safe: on a concurrent queue the
         // watchdog could run alongside a state update, and the check-then-set would
         // let both through — cancelling twice and reporting the result twice.
-        let queue = DispatchQueue(label: "io.netbird.loopback-probe")
+        let queue = DispatchQueue(label: "com.trentfinity.vpn.loopback-probe")
         var settled = false
         let settle: (Bool) -> Void = { listening in
             guard !settled else { return }

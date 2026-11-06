@@ -2,6 +2,8 @@
 //  TVColors.swift
 //  NetBird
 //
+//  Modified for Trentfinity VPN on 2026-11-05: original vector mark and palette.
+//
 //  Shared styling definitions for tvOS views.
 //  Provides colors and layout constants for the 10-foot TV experience.
 //
@@ -53,18 +55,111 @@ struct TVColors {
 
     /// Top-leading color for the full-screen gradient background.
     static var gradientTop: Color {
-        Color(red: 0.10, green: 0.10, blue: 0.20)
+        Color(red: 16 / 255, green: 42 / 255, blue: 67 / 255)
     }
 
     /// Bottom-trailing color for the full-screen gradient background.
     static var gradientBottom: Color {
-        Color(red: 0.03, green: 0.03, blue: 0.06)
+        Color(red: 8 / 255, green: 19 / 255, blue: 33 / 255)
     }
 
     // MARK: - Helper
 
     private static func colorOrFallback(_ name: String, fallback: Color) -> Color {
         UIColor(named: name) != nil ? Color(name) : fallback
+    }
+}
+
+// MARK: - Trentfinity branding
+
+/// Original vector artwork, drawn in SwiftUI so the TV wordmark stays crisp.
+struct TrentfinityTVBrand: View {
+    var markSize: CGFloat = 48
+    var textSize: CGFloat = 26
+
+    var body: some View {
+        HStack(spacing: markSize * 0.22) {
+            TrentfinityTVMark()
+                .frame(width: markSize, height: markSize)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Trentfinity")
+                    .font(.system(size: textSize, weight: .semibold, design: .rounded))
+                Text("VPN")
+                    .font(.system(size: textSize * 0.48, weight: .bold))
+                    .tracking(textSize * 0.13)
+            }
+            .foregroundColor(Color(red: 237 / 255, green: 249 / 255, blue: 1))
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Trentfinity VPN")
+    }
+}
+
+struct TrentfinityTVMark: View {
+    private let cyan = Color(red: 109 / 255, green: 231 / 255, blue: 224 / 255)
+    private let teal = Color(red: 38 / 255, green: 191 / 255, blue: 180 / 255)
+
+    var body: some View {
+        GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+
+            ZStack {
+                TrentfinityShieldShape()
+                    .fill(LinearGradient(
+                        colors: [TVColors.gradientTop, TVColors.gradientBottom],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                TrentfinityShieldShape()
+                    .stroke(
+                        LinearGradient(colors: [cyan, teal], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        style: StrokeStyle(lineWidth: size * 0.035, lineCap: .round, lineJoin: .round)
+                    )
+                TrentfinityInfinityShape()
+                    .stroke(cyan, style: StrokeStyle(lineWidth: size * 0.065, lineCap: .round, lineJoin: .round))
+            }
+            .frame(width: size, height: size)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct TrentfinityShieldShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
+        }
+
+        var path = Path()
+        path.move(to: point(0.5, 0.06))
+        path.addLine(to: point(0.88, 0.20))
+        path.addLine(to: point(0.85, 0.57))
+        path.addCurve(to: point(0.5, 0.95), control1: point(0.81, 0.75), control2: point(0.66, 0.88))
+        path.addCurve(to: point(0.15, 0.57), control1: point(0.34, 0.88), control2: point(0.19, 0.75))
+        path.addLine(to: point(0.12, 0.20))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct TrentfinityInfinityShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
+        }
+
+        var path = Path()
+        path.move(to: point(0.5, 0.44))
+        path.addCurve(to: point(0.22, 0.44), control1: point(0.38, 0.18), control2: point(0.22, 0.24))
+        path.addCurve(to: point(0.5, 0.44), control1: point(0.22, 0.64), control2: point(0.38, 0.70))
+        path.addCurve(to: point(0.78, 0.44), control1: point(0.62, 0.18), control2: point(0.78, 0.24))
+        path.addCurve(to: point(0.5, 0.44), control1: point(0.78, 0.64), control2: point(0.62, 0.70))
+        path.move(to: point(0.5, 0.49))
+        path.addLine(to: point(0.5, 0.75))
+        return path
     }
 }
 

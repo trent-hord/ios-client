@@ -1,0 +1,156 @@
+[
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon - App Store.imagestack/Back.imagestacklayer/Content.imageset/app-store-icon.png",
+    "width": 1280,
+    "height": 768,
+    "kind": "background",
+    "sha256": "c0e0cfac39c3053c9b87eb20452fe75817ff91fc5b53defce5565156a1ad3e59"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon - App Store.imagestack/Middle.imagestacklayer/Content.imageset/app-store-icon.png",
+    "width": 1280,
+    "height": 768,
+    "kind": "foreground",
+    "sha256": "2bcb79c12405496d5ec1949c9002e0eeb6229274388d632eb7fc976c0edd57a1"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Back.imagestacklayer/Content.imageset/netbird-tvos-icon.png",
+    "width": 400,
+    "height": 240,
+    "kind": "background",
+    "sha256": "3b07c5d6c9ceac8602795c86d26a50daf7ff07e8636f7967db62d7eae80b0908"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Back.imagestacklayer/Content.imageset/netbird-tvos-icon@2x.png",
+    "width": 800,
+    "height": 480,
+    "kind": "background",
+    "sha256": "0517107449823305881e00c1fafde5be83cf131d0ff56211c830e9e8d46cff0d"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Front.imagestacklayer/Content.imageset/netbird-tvos-icon.png",
+    "width": 400,
+    "height": 240,
+    "kind": "foreground",
+    "sha256": "39a6e6ecebf181966e33acfacc6998e9e1022405e58fe19651bc694a8a581fd0"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Front.imagestacklayer/Content.imageset/netbird-tvos-icon@2x.png",
+    "width": 800,
+    "height": 480,
+    "kind": "foreground",
+    "sha256": "5c5280274b8107f532810625e1bfec9938ed5f34b564af2658eca74cf8ef7dd1"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Middle.imagestacklayer/Content.imageset/netbird-tvos-icon.png",
+    "width": 400,
+    "height": 240,
+    "kind": "middle",
+    "sha256": "2ce2617a32808ed18a8eac362de3ece4e58d6d75a82e110f923b55b0941c1406"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/App Icon.imagestack/Middle.imagestacklayer/Content.imageset/netbird-tvos-icon@2x.png",
+    "width": 800,
+    "height": 480,
+    "kind": "middle",
+    "sha256": "61a838da2478d6580960d5c05394e16fd99f7cc8e9ea88e1a965313be5183dcb"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/Top Shelf Image Wide.imageset/top-shelf-wide.png",
+    "width": 2320,
+    "height": 720,
+    "kind": "shelf",
+    "sha256": "dcdcdc50407d0493d4b3e03f64ec0cc897e54a1eb2f2839f4c98bc47fc7a2591"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/Top Shelf Image Wide.imageset/top-shelf-wide@2x.png",
+    "width": 4640,
+    "height": 1440,
+    "kind": "shelf",
+    "sha256": "881a743e0f1e0865b479aa50815836192c907c29b9a9c0ad995a72835efaeb81"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/Top Shelf Image.imageset/top-shelf.png",
+    "width": 1920,
+    "height": 720,
+    "kind": "shelf",
+    "sha256": "715536410b6a1785c125e47cefedbdc2a49dc354f90f7091580a64fdf74ecff7"
+  },
+  {
+    "path": "App Icon & Top Shelf Image.brandassets/Top Shelf Image.imageset/top-shelf@2x.png",
+    "width": 3840,
+    "height": 1440,
+    "kind": "shelf",
+    "sha256": "0fb6543f3d1275fae6d00920b91482d4dfe1d23c718a1a1d7961285d96dca19a"
+  },
+  {
+    "path": "icon-empty-box.imageset/icon-empty-box.png",
+    "width": 181,
+    "height": 110,
+    "kind": "empty",
+    "sha256": "2636356cc652e0fb5e28704d3ec5bbfd8eb1e6c9e887eb840353150187652509"
+  },
+  {
+    "path": "icon-netbird-button.imageset/icon-netbird-button.png",
+    "width": 14,
+    "height": 14,
+    "kind": "button",
+    "sha256": "0dab33775d9cfdab8edd32ecbf6252cc8682cac14bdfcf13818e8fe2f67fbe0d"
+  },
+  {
+    "path": "icon-netbird-button.imageset/icon-netbird-button@2x.png",
+    "width": 28,
+    "height": 28,
+    "kind": "button",
+    "sha256": "c6fddb5860cc2b5d5c07c334a09c69cbea06b4c8fab2cfb4c0d105df41f91c1b"
+  },
+  {
+    "path": "icon-netbird-button.imageset/icon-netbird-button@3x.png",
+    "width": 42,
+    "height": 42,
+    "kind": "button",
+    "sha256": "898eb3aa94dfb54905e3bedb3de23d1e7992766d768335cb5ab3e82f6d0416c3"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu 1.png",
+    "width": 150,
+    "height": 37,
+    "kind": "menu",
+    "sha256": "48560c873c2fedc931064a9c3207a9b65f342d9bbc1d676aca9682155fa563e6"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu.png",
+    "width": 150,
+    "height": 37,
+    "kind": "menu",
+    "sha256": "e0505fa06610a9168b05d84d73c7a4125bd39d8db7d7a32b79440397ec0e4ebc"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu@2x 1.png",
+    "width": 301,
+    "height": 74,
+    "kind": "menu",
+    "sha256": "c24b4ed6356c3f479a48b04f334eea564b2a30e4dc5411c0fd461e5fd503078d"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu@2x.png",
+    "width": 301,
+    "height": 74,
+    "kind": "menu",
+    "sha256": "fb06378151f0156242d458cd12bbdea75a3af6a44c77f4be1617992f1ac0d54b"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu@3x 1.png",
+    "width": 452,
+    "height": 112,
+    "kind": "menu",
+    "sha256": "a320d92e21c4fbf7fc9e5cd18f2c9c66cc1bf9f8297933409eb061b1f85b8250"
+  },
+  {
+    "path": "netbird-logo-menu.imageset/netbird-logo-menu@3x.png",
+    "width": 452,
+    "height": 112,
+    "kind": "menu",
+    "sha256": "c52a99854d23c9648e72db27f44a97701e25c9c2ac354d0bb6238a79d9445e66"
+  }
+]

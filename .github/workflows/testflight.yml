@@ -1,3 +1,4 @@
+# Modified for Trentfinity VPN on 2026-11-05.
 name: TestFlight
 
 on:
@@ -21,11 +22,12 @@ jobs:
   gate:
     name: Validate trigger
     if: >
+      github.repository == 'netbirdio/ios-client' && (
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
-      github.event_name == 'issue_comment'
+      github.event_name == 'issue_comment')
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.finalize.outputs.ref }}

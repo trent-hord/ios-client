@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  GoCrashCapture.swift
 //  NetBird
@@ -25,7 +26,7 @@ public enum GoCrashCapture {
     /// Crashlytics keeps at most 64 KB of logs per session; stay under it so the
     /// panic header at the top of the dump is never the part that gets dropped.
     private static let maxReportSize = 48 * 1024
-    private static let reportedOffsetKey = "io.netbird.goCrashCapture.reportedOffset"
+    private static let reportedOffsetKey = "com.trentfinity.vpn.goCrashCapture.reportedOffset"
     private static let crashMarkers = ["panic:", "fatal error:"]
 
     private static var fileURL: URL? {

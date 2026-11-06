@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  AppLogger.swift
 //  NetBird
@@ -12,7 +13,7 @@ public class AppLogger {
 
     private let logFileName = "swift-log.log"
     private let maxLogSize: UInt64 = 100 * 1024  // 100 KB
-    private let queue = DispatchQueue(label: "io.netbird.logger", qos: .utility)
+    private let queue = DispatchQueue(label: "com.trentfinity.vpn.logger", qos: .utility)
     private var fileHandle: FileHandle?
     private var logFileURL: URL?
     private var isReady = false

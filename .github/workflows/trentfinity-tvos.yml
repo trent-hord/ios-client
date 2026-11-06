@@ -1,0 +1,100 @@
+name: Trentfinity tvOS
+
+on:
+  push:
+    branches: [trentfinity-vpn]
+  pull_request:
+    branches: [trentfinity-vpn]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_tvos:
+    name: Build unsigned tvOS app
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout app and core
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Select Xcode 26.1.1
+        run: sudo xcode-select -s /Applications/Xcode_26.1.1.app/Contents/Developer
+
+      - name: Validate Xcode project and tvOS property lists
+        run: |
+          plutil -lint \
+            NetBird.xcodeproj/project.pbxproj \
+            NetBird-TV-Info.plist \
+            "NetBird TV/NetBird TV.entitlements" \
+            "NetBird TV/NetBird TVDebug.entitlements" \
+            NetBirdTVNetworkExtension/Info.plist \
+            NetBirdTVNetworkExtension/NetBirdTVNetworkExtension.entitlements \
+            NetBirdTVNetworkExtension/NetBirdTVNetworkExtensionDebug.entitlements
+
+      - name: Get netbird-core commit
+        id: core-sha
+        working-directory: netbird-core
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache NetBirdSDK xcframework
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: NetBirdSDK.xcframework
+          # Core SHA includes the Go pin; the script hash includes the tvOS fork pin.
+          key: trentfinity-netbirdsdk-tvos-${{ runner.os }}-${{ runner.arch }}-${{ steps.core-sha.outputs.sha }}-${{ hashFiles('build-go-lib.sh') }}-xcode-26.1.1
+
+      - name: Fetch netbird history and tags
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        working-directory: netbird-core
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --unshallow --tags
+          else
+            git fetch --tags
+          fi
+
+      - name: Setup Go
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: netbird-core/go.mod
+          cache-dependency-path: netbird-core/go.sum
+
+      - name: Build NetBirdSDK xcframework
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: ./build-go-lib.sh --tvos
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project NetBird.xcodeproj \
+            -scheme "Trentfinity VPN" \
+            -destination 'generic/platform=tvOS' \
+            -derivedDataPath "$RUNNER_TEMP/TrentfinityDerivedData"
+
+      - name: Build Release app and embedded tunnel extension
+        run: |
+          xcodebuild build \
+            -project NetBird.xcodeproj \
+            -scheme "Trentfinity VPN" \
+            -sdk appletvos \
+            -destination 'generic/platform=tvOS' \
+            -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/TrentfinityDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""

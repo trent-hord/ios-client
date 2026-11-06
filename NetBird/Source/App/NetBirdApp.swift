@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  NetBirdApp.swift
 //  NetBird
@@ -26,15 +27,23 @@ private var isRunningUnitTests: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
-/// Configures Firebase from the bundled GoogleService-Info.plist.
+/// Firebase requires an explicit build opt-in and is always disabled in tests.
+private var isFirebaseEnabled: Bool {
+    !isRunningUnitTests &&
+        (Bundle.main.object(forInfoDictionaryKey: "TrentfinityFirebaseEnabled") as? Bool == true)
+}
+
+/// Configures Firebase only from a plist registered for this app's bundle ID.
 ///
 /// Skipped under unit tests: the CI test plist is a dummy and
 /// FirebaseApp.configure() raises an uncaught Objective-C exception on an
 /// invalid app ID, aborting the test host before the runner can connect.
 private func configureFirebaseIfNeeded() {
-    guard !isRunningUnitTests else { return }
+    guard isFirebaseEnabled else { return }
     guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
           let configuration = NSDictionary(contentsOfFile: path) as? [String: Any],
+          let bundleID = Bundle.main.bundleIdentifier,
+          configuration["BUNDLE_ID"] as? String == bundleID,
           let apiKey = configuration["API_KEY"] as? String,
           apiKey.hasPrefix("AIza"),
           let appID = configuration["GOOGLE_APP_ID"] as? String,
@@ -46,7 +55,7 @@ private func configureFirebaseIfNeeded() {
         // Firebase throws an Objective-C exception (which Swift cannot catch)
         // for placeholder or malformed values. Firebase is optional, so local
         // and CI builds should continue without analytics instead of aborting.
-        NSLog("NetBird: Firebase configuration is absent or invalid; skipping Firebase startup")
+        NSLog("Trentfinity VPN: Firebase configuration is absent, invalid, or for another app; skipping Firebase startup")
         return
     }
 
@@ -60,7 +69,8 @@ private func configureFirebaseIfNeeded() {
 /// dump only exist in netbird.err (see GoCrashCapture), so on the next launch
 /// they are attached to a non-fatal whose headline is the panic line itself.
 private func reportPreviousGoCrashIfNeeded() {
-    guard FirebaseApp.app() != nil,
+    guard isFirebaseEnabled,
+          FirebaseApp.app() != nil,
           let output = GoCrashCapture.takeUnreportedCrashOutput() else { return }
 
     let headline = output
@@ -71,7 +81,7 @@ private func reportPreviousGoCrashIfNeeded() {
     let crashlytics = Crashlytics.crashlytics()
     crashlytics.log(output)
     crashlytics.record(error: NSError(
-        domain: "io.netbird.GoCrash",
+        domain: "com.trentfinity.vpn.GoCrash",
         code: 1,
         userInfo: [NSLocalizedDescriptionKey: headline]
     ))
@@ -80,7 +90,7 @@ private func reportPreviousGoCrashIfNeeded() {
 
 #if os(iOS)
 extension Notification.Name {
-    static let netbirdLoginNotificationTapped = Notification.Name("io.netbird.loginNotificationTapped")
+    static let netbirdLoginNotificationTapped = Notification.Name("com.trentfinity.vpn.loginNotificationTapped")
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -320,7 +330,7 @@ struct NetBirdApp: App {
     #if os(iOS)
     /// Handles deep link URLs from the Home Screen widget.
     private func handleWidgetURL(_ url: URL, viewModel: ViewModel) {
-        guard url.scheme == "netbird" else { return }
+        guard url.scheme == "trentfinity" else { return }
         switch url.host {
         case "login":
             viewModel.connect()

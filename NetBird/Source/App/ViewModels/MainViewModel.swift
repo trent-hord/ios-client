@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  MainViewModel.swift
 //  NetBirdiOS
@@ -58,7 +59,7 @@ enum VPNDisplayState {
 @MainActor
 class ViewModel: ObservableObject {
 
-    private let logger = Logger(subsystem: "io.netbird.app", category: "ViewModel")
+    private let logger = Logger(subsystem: "com.trentfinity.vpn", category: "ViewModel")
 
     // VPN Adapter (shared)
     @Published var networkExtensionAdapter: NetworkExtensionAdapter
@@ -192,7 +193,7 @@ class ViewModel: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private let networkMonitor = NWPathMonitor()
-    private let monitorQueue = DispatchQueue(label: "io.netbird.networkMonitor")
+    private let monitorQueue = DispatchQueue(label: "com.trentfinity.vpn.networkMonitor")
     #if os(iOS)
     private var vpnStatusObserver: NSObjectProtocol?
     private var mdmConfigObserver: NSObjectProtocol?
@@ -659,7 +660,7 @@ class ViewModel: ObservableObject {
         userDefaults?.set(fqdn, forKey: GlobalConstants.keyWidgetFQDN)
         WidgetCenter.shared.reloadAllTimelines()
         if #available(iOS 18.0, *) {
-            ControlCenter.shared.reloadControls(ofKind: "io.netbird.vpn.control")
+            ControlCenter.shared.reloadControls(ofKind: "com.trentfinity.vpn.vpn.control")
         }
     }
     #endif

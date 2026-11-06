@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  GlobalConstantsTests.swift
 //  NetBirdTests
@@ -17,6 +18,6 @@ final class GlobalConstantsTests: XCTestCase {
     }
 
     func testUserPreferencesSuiteName() {
-        XCTAssertEqual(GlobalConstants.userPreferencesSuiteName, "group.io.netbird.app")
+        XCTAssertEqual(GlobalConstants.userPreferencesSuiteName, "group.com.trentfinity.vpn")
     }
 }

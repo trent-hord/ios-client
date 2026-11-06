@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Modified for Trentfinity VPN on 2026-11-05. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>TrentfinityFirebaseEnabled</key>
+	<false/>
 	<key>UIAppFonts</key>
 	<array>
 		<string>inter-variable.ttf</string>
@@ -11,10 +14,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>io.netbird.app</string>
+			<string>com.trentfinity.vpn</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>netbird</string>
+				<string>trentfinity</string>
 			</array>
 		</dict>
 	</array>

@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  FirstLaunchView.swift
 //  NetBird
@@ -64,14 +65,14 @@ struct FirstLaunchView: View {
             if let range = result.range(of: "Change server") {
                 result[range].foregroundColor = .orange
                 result[range].font = .system(size: 17, weight: .semibold)
-                result[range].link = URL(string: "netbird://changeserver")
+                result[range].link = URL(string: "trentfinity://changeserver")
             }
             return result
         }()
 
         return Text(attributed)
             .environment(\.openURL, OpenURLAction { url in
-                if url.scheme == "netbird" {
+                if url.scheme == "trentfinity" {
                     hasCompletedOnboarding = true
                     onChangeServer()
                     return .handled

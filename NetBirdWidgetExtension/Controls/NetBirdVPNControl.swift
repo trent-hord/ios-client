@@ -1,10 +1,11 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 import SwiftUI
 import WidgetKit
 
 @available(iOS 18.0, *)
 struct NetBirdVPNControl: ControlWidget {
 
-    static let kind = "io.netbird.vpn.control"
+    static let kind = "com.trentfinity.vpn.vpn.control"
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(

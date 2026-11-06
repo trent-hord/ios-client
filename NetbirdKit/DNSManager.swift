@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  DNSHostManager.swift
 //  NetBirdiOS
@@ -27,7 +28,7 @@ class DNSManager: NSObject, NetBirdSDKDnsManagerProtocol {
     // manager for the SDK client's lifetime and can fire applyDns late, after the
     // adapter has been swapped/torn down. Guard against dereferencing a freed
     // tunnelManager (EXC_BAD_ACCESS / 0x28) and serialize with invalidate().
-    private let callbackQueue = DispatchQueue(label: "io.netbird.DNSManager")
+    private let callbackQueue = DispatchQueue(label: "com.trentfinity.vpn.DNSManager")
     private var isValid = true
 
     private var tunnelManager: PacketTunnelProviderSettingsManager?

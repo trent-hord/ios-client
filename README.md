@@ -1,221 +1,47 @@
-<br/>
- <div align="center">
- <p align="center">
-   <img width="234" src="https://raw.githubusercontent.com/netbirdio/netbird/main/docs/media/logo-full.png"/>
- </p>
-   <p>
-      <a href="https://github.com/netbirdio/netbird/blob/main/LICENSE">
-        <img height="20" src="https://www.gnu.org/graphics/gplv3-88x31.png" alt="License: GPL-3.0" />
-      </a>
-     <a href="https://join.slack.com/t/netbirdio/shared_invite/zt-vrahf41g-ik1v7fV8du6t0RwxSrJ96A">
-         <img src="https://img.shields.io/badge/slack-@netbird-red.svg?logo=slack" alt="Slack"/>
-      </a>
-      <a href="https://github.com/netbirdio/ios-client/actions/workflows/build.yml">
-         <img src="https://github.com/netbirdio/ios-client/actions/workflows/build.yml/badge.svg" alt="Build Status"/>
-      </a>
-      <a href="https://github.com/netbirdio/ios-client/actions/workflows/test.yml">
-         <img src="https://github.com/netbirdio/ios-client/actions/workflows/test.yml/badge.svg" alt="Test Status"/>
-      </a>
-   </p>
- </div>
+# Trentfinity VPN
 
+<img src="scripts/branding/trentfinity-mark.svg" alt="Trentfinity infinity shield" width="112" />
 
- <p align="center">
- <strong>
-   Start using NetBird at <a href="https://netbird.io/pricing">netbird.io</a>
-   <br/>
-   See <a href="https://netbird.io/docs/">Documentation</a>
-   <br/>
-    Join our <a href="https://join.slack.com/t/netbirdio/shared_invite/zt-vrahf41g-ik1v7fV8du6t0RwxSrJ96A">Slack channel</a>
-   <br/>
+An independently maintained NetBird client for Apple TV, based on the upstream NetBird Apple app and Go client. This fork brings upstream development into a separately branded app while retaining compatibility with NetBird Cloud and self-hosted NetBird servers. It is not affiliated with or endorsed by NetBird GmbH.
 
- </strong>
- </p>
+This is a development fork. Building it does not establish App Store eligibility, and Apple distribution and GPL-related release questions remain unresolved.
 
- <br>
+- [Source branch](https://github.com/trent-hord/ios-client/tree/trentfinity-vpn)
+- [Support and issues](https://github.com/trent-hord/ios-client/issues)
+- [Fork details, pinned versions, and release preparation](docs/FORK.md)
+- [Upstream NetBird documentation](https://docs.netbird.io)
 
-# NetBird iOS & tvOS Client
+## Build for Apple TV
 
-The NetBird iOS/tvOS client allows connections from mobile devices running iOS 14.0+ and Apple TV running tvOS 17.0+ to private resources in the NetBird network.
+Use a Mac with **Xcode 26.1.1** selected and Go compatible with [`netbird-core/go.mod`](netbird-core/go.mod). The initial core pin declares Go 1.26.0 and toolchain `go1.26.10`. Live VPN testing requires a physical Apple TV running **tvOS 17 or later**.
 
-## Install
-You can download and install the app from the App Store:
-
-[<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="80">](https://apps.apple.com/app/netbird-p2p-vpn/id6469329339)
-
-## Screenshots
-
-<p align="center">
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/f3eff73a-44e9-46e2-b63d-cce004246875" alt="mainscreen" width="250" style="margin-right: 10px;"/>
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/0e73f79a-0d95-41eb-8e8e-6ed489c85b14" alt="peer-overview" width="250" style="margin-right: 10px;"/>
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/a633c80e-86d0-41fe-88d0-8a7bb6cbaf66" alt="menu" width="250"/>
-</p>
-
-## Reporting bugs and requesting features
-
-NetBird uses a discussion-first workflow across all its repositories. Bug reports and
-feature requests for the iOS and tvOS client start in
-[netbird Discussions](https://github.com/netbirdio/netbird/discussions), not as issues here.
-
-| What you want to do | Where to go |
-| --- | --- |
-| Report a bug, regression, or unexpected behavior | [Issue Triage](https://github.com/netbirdio/netbird/discussions/new?category=issue-triage) |
-| Request a feature or share an idea | [Ideas & Feature Requests](https://github.com/netbirdio/netbird/discussions/new?category=ideas-feature-requests) |
-| Ask about setup, configuration, or self-hosting | [Q&A / Support](https://github.com/netbirdio/netbird/discussions/new?category=q-a-support) |
-| Report a security vulnerability | [Security policy](https://github.com/netbirdio/netbird/security/policy), never a public thread |
-
-Our team triages each discussion. Validated reports become issues in this repository,
-linked back to the discussion. See
-[How to use Discussions, Issues, and Pull Requests](https://github.com/netbirdio/netbird/discussions/6075)
-for the full workflow.
-
-## Code structure
-The code is divided into 4 parts:
-- The main netbird Go code, included as a git submodule at `/netbird-core` from the [NetBird](https://github.com/netbirdio/netbird) repo, compiled into an xcframework. This contains most of the client logic.
-- The network extension `/NetbirdNetworkExtension` that is running in the background where the compiled Go code is executed.
-- The UI and app code under `/NetBird`
-- The `/NetbirdKit/NetworkExtensionAdapter` that controls the extension and builds the link between UI and extension
-
-## Requirements
-
-- iOS 14.0+ / tvOS 17.0+
-- Xcode 16.1+
-- Go (version determined by the netbird submodule's `go.mod`)
-- gomobile (for iOS builds)
-- gomobile-netbird (for tvOS builds — NetBird's fork with tvOS support)
-
-### gomobile
-
-For iOS-only builds, install the standard gomobile:
-
-```bash
-go install golang.org/x/mobile/cmd/gomobile@latest
-```
-
-### gomobile-netbird
-
-For tvOS builds, install `gomobile-netbird`, NetBird's fork of gomobile that adds tvOS support. See: https://github.com/netbirdio/gomobile-tvos-fork
-
-```bash
-go install github.com/netbirdio/gomobile-tvos-fork/cmd/gomobile-netbird@latest
-```
-
-## Run locally
-
-The main netbird Go code is included as a git submodule at `netbird-core/`.
-
-```bash
-git clone --recursive https://github.com/netbirdio/ios-client.git
-cd ios-client
-```
-
-If you already cloned without `--recursive`:
-```bash
-git submodule update --init --recursive
-```
-
-Build the XCFramework for iOS:
-```bash
-./build-go-lib.sh
-```
-
-Or for tvOS (includes iOS, iOS Simulator, tvOS, and tvOS Simulator targets):
-```bash
+```sh
+git clone --branch trentfinity-vpn --recurse-submodules \
+  https://github.com/trent-hord/ios-client.git trentfinity-vpn
+cd trentfinity-vpn
 ./build-go-lib.sh --tvos
+open NetBird.xcodeproj
 ```
 
-You can also pass an explicit version:
-```bash
-./build-go-lib.sh 0.2.0
-./build-go-lib.sh --tvos 0.2.0
-```
+Select the shared **Trentfinity VPN** scheme, configure your own Apple Developer team for the TV app and tunnel extension, and run on your paired Apple TV. The Xcode project and underlying target names retain their upstream names to keep the fork easy to maintain.
 
-Open the Xcode project, and we are ready to go.
+| Component | Identifier |
+| --- | --- |
+| TV app | `com.trentfinity.vpn.tv` |
+| TV tunnel extension | `com.trentfinity.vpn.tv.extension` |
+| Shared App Group | `group.com.trentfinity.vpn.tv` |
 
-### Updating the netbird submodule
+The initial TV app and extension version is **0.1.0**, build **1**. Register compatible identifiers and provisioning profiles under your team; if you change these identifiers, update the app, extension, entitlements, and shared configuration together. See [the build and signing notes](docs/FORK.md#build-and-signing).
 
-To update to a newer netbird version:
-```bash
-cd netbird-core
-git fetch --tags
-git checkout v0.x.y   # or any branch/commit
-cd ..
-git add netbird-core
-git commit -m "update netbird submodule to v0.x.y"
-```
+## What changed
 
-### Running on iOS Device
+- Trentfinity VPN name, original infinity-shield artwork, and separate app identity.
+- TV Settings → About includes upstream credit, GPLv3 information, and this fork's source/support links.
+- Firebase startup is disabled by default through `TrentfinityFirebaseEnabled=false`. Firebase is optional diagnostics/analytics infrastructure, not the VPN or sign-in implementation. This setting is not a claim that the app or connected servers collect no data.
+- [Unsigned tvOS CI](.github/workflows/trentfinity-tvos.yml) builds pushes to this branch without App Store credentials. Its output is a build check, not a signed installable release. The inherited publishing jobs are restricted to the upstream repository; Trentfinity publishing is not configured.
 
-> **Note:** The app cannot run in the iOS simulator. To test the app, a physical device needs to be connected to Xcode via cable and set as the run destination.
+## License and attribution
 
-### Verifying iOS network reconnection
+The Apple app retains the upstream [GNU GPLv3 license](LICENSE). Upstream work is by NetBird GmbH and contributors; fork changes are by Trentfinity VPN contributors. The Go core and third-party dependencies retain their respective licenses and notices.
 
-Network changes are sent to the Go SDK's network event manager, which suspends
-retries while offline and refreshes stale connections after a handover. The iOS
-extension observes physical interfaces, IPv4 addresses, IPv6 network prefixes,
-gateways, IP-family availability
-and the active data SIM;
-a SIM switch can retain the same cellular interface. Paths marked
-`requiresConnection` allow dialing so the connection can activate the network.
-After initial connection, the SDK’s Connecting and NoNetwork states set iOS’s
-`reasserting` status; SDK connection success clears it. Stopping the tunnel or
-failing authentication also clears it. The app displays “No network” for the SDK’s
-NoNetwork state and “Reconnecting…” while reconnecting, and keeps the disconnect
-control available. Wake reconciles the current physical path without forcing a
-refresh when it is unchanged. Healthy sockets stay open;
-the core's normal liveness checks recover connections that actually expired.
-
-The existing core sweep refreshes management, signal and relay connections.
-ICE/P2P cleanup and the sweep timing are unchanged; P2P is disabled by default
-on mobile to limit battery usage.
-Policy restarts interrupted by an outage resume when the physical network returns.
-
-“Connected” reflects management/signal connectivity, not proof that every peer
-or routed resource is reachable. Verify actual traffic in the checks below.
-
-Run `NetworkReconnectionStateTests` for event deduplication, rapid SIM changes,
-offline recovery, wake handling, path capabilities, app reassertion and shutdown behavior. End-to-end handovers require a physical
-dual-SIM iPhone:
-
-1. Connect the VPN and continuously access a private peer or routed resource.
-2. With Wi-Fi disabled, switch Cellular Data from SIM A to SIM B and back. Repeat
-   with Allow Cellular Data Switching enabled and the app in the background.
-   Receive a regular voice call on the non-data SIM, keep traffic running, then
-   end the call and verify recovery as data returns to the original SIM. Repeat
-   with switching disabled: an outage during the call is expected, but recovery
-   after the call must not require toggling the VPN.
-3. Test Wi-Fi → cellular → Wi-Fi and airplane mode → recovery on the same SIM.
-4. Repeat with an exit node selected; verify both private and Internet traffic recover.
-5. Switch between two Wi-Fi networks, including networks with the same local
-   subnet; test IPv6-only/NAT64 and dual-stack networks.
-6. Lock the phone, let it sleep, then wake on the same and on a different network.
-   Repeated wakes on an unchanged path must not cause network-change sweeps.
-7. Verify that genuinely expired credentials still trigger login and remove
-   the tunnel routes. Offline startup authentication is a separate change.
-8. Disconnect the VPN during a handover and verify it stays disconnected with
-   On Demand disabled.
-
-Check the extension log for `Network event:` and the core's
-`network change: connections marked stale` messages. Simulator tests cannot
-validate carrier handovers or live VPN traffic.
-
-### Running on Apple TV
-
-> **Note:** The app cannot run in the tvOS simulator. To test the app, a physical device running tvOS 17.0 or later needs to be [paired with Xcode](https://support.apple.com/en-us/101262).
-
-### Firebase Configuration (Optional)
-
-The app supports Firebase for analytics and crash reporting. To enable it, add your `GoogleService-Info.plist` file to the project root. The app will work without Firebase configuration. For a local device build without Firebase, omit this file from the targets’ Copy Bundle Resources phases. The CI test placeholder is not a production Firebase configuration. Startup skips missing or invalid Firebase settings; unit tests also skip Firebase initialization.
-
-## Other project repositories
-
-NetBird project is composed of multiple repositories:
-- NetBird: https://github.com/netbirdio/netbird, contains the code for the agents and control plane services.
-- Dashboard: https://github.com/netbirdio/dashboard, contains the Administration UI for the management service
-- Documentations: https://github.com/netbirdio/docs, contains the documentation from https://netbird.io/docs
-- Android Client: https://github.com/netbirdio/android-client
-- iOS/tvOS Client: https://github.com/netbirdio/ios-client (this repository)
-
-Network events include their source (`path`, `dataSIM`, or `wake`) and whether
-they were unchanged, initial, unavailable, recovered, or changed. AppLogger adds
-timestamps; no SIM identifiers or address values are added to these diagnostics.
+The original upstream README is preserved unchanged in [docs/UPSTREAM_README.md](docs/UPSTREAM_README.md) for reference. Its branding, release links, and configuration instructions describe the upstream project; use this README and [docs/FORK.md](docs/FORK.md) for this fork.

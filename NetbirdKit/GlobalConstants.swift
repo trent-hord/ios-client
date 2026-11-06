@@ -1,3 +1,4 @@
+// Modified for Trentfinity VPN on 2026-11-05.
 //
 //  GlobalConstants.swift
 //  NetBird
@@ -6,10 +7,15 @@
 //
 
 struct GlobalConstants {
+    static let appDisplayName = "Trentfinity VPN"
+    static let projectSourceURL = "https://github.com/trent-hord/ios-client/tree/trentfinity-vpn"
+    static let projectSupportURL = "https://github.com/trent-hord/ios-client/issues"
+    static let projectLicenseURL = "https://github.com/trent-hord/ios-client/blob/trentfinity-vpn/LICENSE"
+
     #if os(tvOS)
-    static let userPreferencesSuiteName = "group.io.netbird.app.tv"
+    static let userPreferencesSuiteName = "group.com.trentfinity.vpn.tv"
     #else
-    static let userPreferencesSuiteName = "group.io.netbird.app"
+    static let userPreferencesSuiteName = "group.com.trentfinity.vpn"
     #endif
 
     static let keyForceRelayConnection = "isConnectionForceRelayed"
@@ -57,7 +63,7 @@ struct GlobalConstants {
     /// Darwin notification posted by the app whenever that mirror changes.
     /// UserDefaults.didChangeNotification is process-local and cannot tell a
     /// running extension anything; this crosses the process boundary.
-    static let darwinNotificationMDMPolicyChanged = "io.netbird.mdm.policyChanged"
+    static let darwinNotificationMDMPolicyChanged = "com.trentfinity.vpn.mdm.policyChanged"
 
     /// Darwin notification posted by the network extension whenever the core's
     /// network map moves: a sync was applied, a route gained or lost its routing
@@ -66,7 +72,7 @@ struct GlobalConstants {
     /// first network map has arrived, so without this the app would never learn
     /// that there is something to re-read. Carries no payload; the app answers
     /// it with a GetRoutes round-trip.
-    static let darwinNotificationNetworkMapChanged = "io.netbird.networkMapChanged"
+    static let darwinNotificationNetworkMapChanged = "com.trentfinity.vpn.networkMapChanged"
 
     // Local notification identifiers
     static let notificationLoginRequired = "netbird.login.required"
