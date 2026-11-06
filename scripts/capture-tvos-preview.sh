@@ -29,7 +29,6 @@ if ! simulator_id=$(select_tv); then
 fi
 
 xcrun simctl bootstatus "$simulator_id" -b
-xcrun simctl ui "$simulator_id" appearance dark
 
 xcodebuild build \
   -project NetBird.xcodeproj \
@@ -50,9 +49,6 @@ xcrun simctl launch --terminate-running-process "$simulator_id" com.trentfinity.
 # Allow startup loading and the first SwiftUI render to settle. No login,
 # fake connection data, or network-extension session is used for this preview.
 sleep 15
-xcrun simctl io "$simulator_id" screenshot "$screenshots/connection-dark.png"
-xcrun simctl ui "$simulator_id" appearance light
-sleep 3
-xcrun simctl io "$simulator_id" screenshot "$screenshots/connection-light.png"
+xcrun simctl io "$simulator_id" screenshot "$screenshots/connection.png"
 printf 'Native simulator captures from commit %s\nDisconnected state; no VPN session.\n' \
   "$(git rev-parse HEAD)" > "$screenshots/README.txt"
