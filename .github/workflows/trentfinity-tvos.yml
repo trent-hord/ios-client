@@ -44,6 +44,14 @@ jobs:
             NetBirdTVNetworkExtension/NetBirdTVNetworkExtension.entitlements \
             NetBirdTVNetworkExtension/NetBirdTVNetworkExtensionDebug.entitlements
 
+      - name: Test routing-node telemetry
+        run: |
+          xcrun swiftc -swift-version 5 \
+            NetbirdKit/ExitNodeConnection.swift \
+            tests/ExitNodeConnectionTests.swift \
+            -o "$RUNNER_TEMP/ExitNodeConnectionTests"
+          "$RUNNER_TEMP/ExitNodeConnectionTests"
+
       - name: Get netbird-core commit
         id: core-sha
         working-directory: netbird-core

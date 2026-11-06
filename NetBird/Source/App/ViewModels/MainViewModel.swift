@@ -714,7 +714,11 @@ class ViewModel: ObservableObject {
 
                 let sortedPeerInfo = details.peerInfo.sorted { $0.ip < $1.ip }
                 if sortedPeerInfo.count != self.peerViewModel.peerInfo.count || !sortedPeerInfo.elementsEqual(self.peerViewModel.peerInfo, by: { a, b in
-                    a.ip == b.ip && a.connStatus == b.connStatus && a.relayed == b.relayed && a.direct == b.direct && a.connStatusUpdate == b.connStatusUpdate && a.routes.count == b.routes.count
+                    // Modified for Trentfinity VPN on 2026-11-06: include RTT,
+                    // peer identity and actual routes so telemetry and HA changes
+                    // are published even when the number of routes stays equal.
+                    a.exitNodeSnapshot == b.exitNodeSnapshot &&
+                    a.direct == b.direct && a.connStatusUpdate == b.connStatusUpdate
                 }) {
                     print("Setting new peer info: \(sortedPeerInfo.count) Peers")
                     self.peerViewModel.peerInfo = sortedPeerInfo
@@ -733,6 +737,12 @@ class ViewModel: ObservableObject {
     
     func stopPollingDetails() {
         networkExtensionAdapter.stopTimer()
+    }
+
+    /// Never present cached routing-peer measurements for a stopped tunnel or
+    /// for the previous profile while a profile switch is still in flight.
+    var canShowExitNodeConnectionDetails: Bool {
+        extensionState == .connected && !profileSwitchPending
     }
     
     // Prevents overlapping getExtensionStatus calls from delivering out-of-order results.

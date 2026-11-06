@@ -4,6 +4,7 @@
 //
 //  Exit node selector shown on the tvOS connection screen.
 //
+//  Modified for Trentfinity VPN on 2026-11-06: routing node, path, and latency.
 
 import SwiftUI
 
@@ -18,16 +19,25 @@ import SwiftUI
 /// stats bar out of position, and tvOS has no pointer to dismiss a floating overlay with;
 /// a sheet is the platform's normal way to pick from a set of options.
 ///
-/// The card stays in the layout even with nothing to choose from, rendering disabled, so
-/// the screen doesn't reflow as routes come and go.
+/// The selection card stays visible even with nothing to choose from. Routing telemetry
+/// comes from the installed peer routes, independently of the selected route-group name.
 struct TVExitNodeSelector: View {
     @ObservedObject var routeViewModel: RoutesViewModel
+    @ObservedObject var peerViewModel: PeerViewModel
+    let isConnected: Bool
 
     @State private var isPresentingList = false
     @FocusState private var isFocused: Bool
 
     private var exitNodes: [RoutesSelectionInfo] { routeViewModel.exitNodes }
     private var isAvailable: Bool { !exitNodes.isEmpty }
+    private var connectionDetails: ExitNodeConnectionDetails {
+        ExitNodeConnectionDetails(
+            isConnected: isConnected,
+            selectedNetwork: routeViewModel.selectedExitNode?.network,
+            peers: peerViewModel.peerInfo.map(\.exitNodeSnapshot)
+        )
+    }
 
     var body: some View {
         Button {
@@ -38,8 +48,10 @@ struct TVExitNodeSelector: View {
         .buttonStyle(TVSettingsButtonStyle())
         .focused($isFocused)
         .disabled(!isAvailable)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Exit node")
-        .accessibilityValue(subtitle)
+        .accessibilityValue(accessibilitySummary)
+        .accessibilityHint(isAvailable ? "Choose an exit node." : "")
         .sheet(isPresented: $isPresentingList) {
             TVExitNodeListSheet(routeViewModel: routeViewModel)
         }
@@ -52,28 +64,36 @@ struct TVExitNodeSelector: View {
     }
 
     private var card: some View {
-        HStack(spacing: 18) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 26))
-                .foregroundColor(isFocused ? .black : iconColor)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 18) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 26))
+                    .foregroundColor(isFocused ? .black : iconColor)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Exit node")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(isFocused ? .black.opacity(0.6) : TVColors.textSecondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Exit node")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(secondaryColor)
 
-                Text(subtitle)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundColor(isFocused ? .black : titleColor)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    Text(subtitle)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundColor(isFocused ? .black : titleColor)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+
+                Spacer(minLength: 16)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(secondaryColor)
             }
 
-            Spacer(minLength: 16)
+            Rectangle()
+                .fill(isFocused ? Color.black.opacity(0.12) : Color.white.opacity(0.12))
+                .frame(height: 1)
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(isFocused ? .black : TVColors.textSecondary)
+            telemetry
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 20)
@@ -87,13 +107,117 @@ struct TVExitNodeSelector: View {
         )
     }
 
+    @ViewBuilder
+    private var telemetry: some View {
+        if connectionDetails.state == .active {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 28) {
+                    Text(connectionDetails.peers.count > 1 ? "Routing nodes" : "Routing node")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Connection")
+                        .frame(width: 190, alignment: .leading)
+                    Text("Latency")
+                        .frame(width: 170, alignment: .leading)
+                }
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(secondaryColor)
+
+                ForEach(connectionDetails.peers) { peer in
+                    telemetryRow(
+                        name: peer.name,
+                        address: peer.address,
+                        connectionType: peer.connectionType,
+                        latencyText: peer.latencyText,
+                        addressFamilies: peer.addressFamilies
+                    )
+                }
+            }
+        } else {
+            Text(telemetryPlaceholder)
+                .font(.system(size: 20))
+                .foregroundColor(secondaryColor)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+        }
+    }
+
+    private func telemetryRow(
+        name: String,
+        address: String,
+        connectionType: String,
+        latencyText: String,
+        addressFamilies: String
+    ) -> some View {
+        HStack(alignment: .top, spacing: 28) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(primaryColor)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                Text(address.isEmpty || address == name ? addressFamilies : "\(address) · \(addressFamilies)")
+                    .font(.system(size: 18))
+                    .foregroundColor(secondaryColor)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(connectionType)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(isFocused ? .black : .accentColor)
+                .frame(width: 190, alignment: .leading)
+
+            Text(latencyText)
+                .font(.system(size: 24, weight: .semibold))
+                .monospacedDigit()
+                .foregroundColor(primaryColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: 170, alignment: .leading)
+        }
+    }
+
+    private var telemetryPlaceholder: String {
+        switch connectionDetails.state {
+        case .disconnected:
+            return "Connect to see the routing node, connection type, and latency."
+        case .noExitNode:
+            return "No exit node selected. View individual peer connections in Peers."
+        case .waiting:
+            return "Waiting for routing node details…"
+        case .active:
+            return ""
+        }
+    }
+
+    private var accessibilitySummary: String {
+        guard connectionDetails.state == .active else {
+            return "\(subtitle). \(telemetryPlaceholder)"
+        }
+        let peers = connectionDetails.peers.map { peer in
+            let path = peer.connectionType == "P2P" ? "peer to peer" : peer.connectionType
+            let address = peer.address.isEmpty || peer.address == peer.name ? "" : ", \(peer.address)"
+            return "Routing node \(peer.name)\(address), \(peer.addressFamilies), \(path), latency \(peer.latencyText)."
+        }
+        return "\(subtitle). " + peers.joined(separator: " ")
+    }
+
+    private var primaryColor: Color {
+        isFocused ? .black : TVColors.textPrimary
+    }
+
+    private var secondaryColor: Color {
+        isFocused ? .black.opacity(0.6) : TVColors.textSecondary
+    }
+
     private var subtitle: String {
         guard isAvailable else { return "No exit nodes available" }
         return routeViewModel.selectedExitNode?.name ?? "None"
     }
 
     private var iconColor: Color {
-        isAvailable ? .orange : TVColors.textSecondary
+        isAvailable ? .accentColor : TVColors.textSecondary
     }
 
     private var titleColor: Color {

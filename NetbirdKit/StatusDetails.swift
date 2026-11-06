@@ -8,6 +8,8 @@
 import Foundation
 import Combine
 
+// Modified for Trentfinity VPN on 2026-11-06: routing-peer telemetry snapshots.
+
 struct StatusDetails: Codable {
     var ip: String
     var ipv6: String?
@@ -98,6 +100,13 @@ extension PeerInfo: Equatable {
 }
 
 extension PeerInfo {
+    var exitNodeSnapshot: ExitNodePeerSnapshot {
+        ExitNodePeerSnapshot(
+            key: pubKey, hostname: fqdn, ip: ip, connectionStatus: connStatus,
+            relayed: relayed, latency: latency, routes: routes
+        )
+    }
+
     func update(from newInfo: PeerInfo) {
         self.ip = newInfo.ip
         self.ipv6 = newInfo.ipv6

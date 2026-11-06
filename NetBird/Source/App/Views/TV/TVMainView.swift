@@ -3,6 +3,7 @@
 //  NetBird
 //
 //  Modified for Trentfinity VPN on 2026-11-05: independent app branding.
+//  Modified for Trentfinity VPN on 2026-11-06: main-screen routing telemetry.
 //
 //  Main navigation structure for tvOS.
 //
@@ -208,7 +209,11 @@ struct TVConnectionView: View {
 
                 Spacer()
 
-                TVExitNodeSelector(routeViewModel: viewModel.routeViewModel)
+                TVExitNodeSelector(
+                    routeViewModel: viewModel.routeViewModel,
+                    peerViewModel: viewModel.peerViewModel,
+                    isConnected: viewModel.canShowExitNodeConnectionDetails
+                )
                     .padding(.horizontal, 120)
                     .padding(.bottom, 24)
 

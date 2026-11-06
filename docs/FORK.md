@@ -44,6 +44,16 @@ The [`trentfinity-tvos.yml` workflow](../.github/workflows/trentfinity-tvos.yml)
 
 Inherited release, TestFlight, scratch-build, and version-bump entry jobs are gated to `github.repository == 'netbirdio/ios-client'`. Their upstream signing setup is not a Trentfinity publishing pipeline. Use the new unsigned workflow for this fork; signed release automation is intentionally not configured.
 
+## Routing-node details
+
+The main TV screen shows the installed routing peer underneath the exit-node choice: hostname/IP, address family, P2P or Relayed, and the core's measured round-trip latency in milliseconds. The exit-node choice names a route group; its physical routing peer can change during failover. IPv4 and IPv6 can use different peers, so both are shown when reported.
+
+These values come from the latest core status sample, refreshed every ten seconds. Changes can take until the next sample to appear. No exit node selected means there is no single internet gateway to summarize; individual mesh connections remain available under Peers. Disconnecting or switching profiles hides the previous tunnel's measurements.
+
+Zero or absent RTT is displayed as **Unavailable**. Some relay transports do not provide an RTT; a positive measurement from a TURN-backed path is retained. No additional network probes are started for this display.
+
+`tests/ExitNodeConnectionTests.swift` checks routing-peer selection, failover updates, separate IPv4/IPv6 nodes, transport labels, and Go duration conversion. The tvOS CI workflow runs it with the native Swift compiler before building the app.
+
 ## Firebase is optional
 
 Firebase is disabled by default: the app's Info.plist setting `TrentfinityFirebaseEnabled` is **false**, and startup additionally checks for a valid configuration matching the app's bundle identifier. Unit-test runs skip Firebase initialization. The fork removes the required `GoogleService-Info.plist` resource references and automatic Crashlytics symbol-upload build scripts.

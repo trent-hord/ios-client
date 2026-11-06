@@ -37,6 +37,7 @@ The initial TV app and extension version is **0.1.0**, build **1**. Register com
 
 - Trentfinity VPN name, original infinity-shield artwork, and separate app identity.
 - TV Settings → About includes upstream credit, GPLv3 information, and this fork's source/support links.
+- The connection screen shows the exit route's current routing peer, P2P or relay transport, and measured latency. Separate IPv4/IPv6 routing peers are shown when applicable; details refresh with the existing ten-second status poll.
 - Firebase startup is disabled by default through `TrentfinityFirebaseEnabled=false`. Firebase is optional diagnostics/analytics infrastructure, not the VPN or sign-in implementation. This setting is not a claim that the app or connected servers collect no data.
 - [Unsigned tvOS CI](.github/workflows/trentfinity-tvos.yml) builds pushes to this branch without App Store credentials. Its output is a build check, not a signed installable release. The inherited publishing jobs are restricted to the upstream repository; Trentfinity publishing is not configured.
 
