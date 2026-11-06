@@ -98,3 +98,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
+
+      - name: Capture native tvOS simulator preview
+        run: bash scripts/capture-tvos-preview.sh
+
+      - name: Upload native app screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: trentfinity-tvos-preview
+          path: ${{ runner.temp }}/TrentfinityScreenshots
+          if-no-files-found: error
+          retention-days: 14
